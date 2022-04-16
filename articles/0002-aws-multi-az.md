@@ -31,7 +31,10 @@ DirectConnectを利用し、オンプレミス環境とAWS間を接続してい�
 https://www.slideshare.net/AmazonWebServicesJapan/20200219-aws-black-belt-online-seminar-aws
 
 ##  vpc内のリソースの可用性について
-vpc内の各リソースは３つのAZに配置することで、あるAZに障害が起きても、サービスを停止することなく稼働し続けられるようにしています。Fargate上のタスク、OpenSearch上のノードが単一障害点にならないように、ELB（NLBとALB）を配置し死活監視を行います。これにより単一の障害がワークロード全体に与える影響を低減しています。
+vpc内の各リソースは３つのAZに配置することで、あるAZに障害が起きても、サービスを停止することなく稼働し続けられるようにしています。Fargate上のタスク、OpenSearch上のノードが単一障害点にならないように、ELB（NLBとALB）を配置し死活監視を行います。これにより単一の障害がワークロード全体に与える影響を低減しています。また、ELBを用いることで、負荷分散が可能になります。ALBはラウンドロビン、NLBはフローハッシュアルゴリズムによってリクエストをバックエンドのリソースにルーティングを行います。
+
+https://d1.awsstatic.com/webinars/jp/pdf/services/20191029_AWS-Blackbelt_ELB.pdf
+
 
 OpenSearchは、３つのAZに３つのマスターノードを配置することでダウンタイムをなく、２つの専用マスターノードがマスターノードを選択することができます。
 
@@ -55,7 +58,7 @@ CloudFormationには、データノード（Instance）３つ、マスターノ�
 ```
 
 ### NLBをマルチAZに配置する際の注意点
-ALBはクロスゾーン負荷分散がデフォルトで有効になっていますが、NLBは無効となっていますので、有効にしないと１つのAZに配置されます。
+ALBはクロスゾーン負荷分散がデフォルトで有効になっていますが、NLBは無効となっていますので、有効にしないと１つのAZに配置されます。クロスゾーン負荷分散を有効にすることで、AZ毎のリソースの数が異なっていても、負荷を均等に保つことができます。
 
 https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/userguide/how-elastic-load-balancing-works.html#availability-zones
 
@@ -76,5 +79,17 @@ OpenSearchのエンドポイントはドメインエンドポイントとなり�
 https://zenn.dev/s_tomoyuki/articles/76d8ade04df397
 
 
+
+# 障害から自動的に復旧する
+ECSを利用し、`DesiredCount`を設定することで、クラスタ内に指定した数のタスクが走ることを維持することができます。一つのタスクが止まり指定した数よりもタスクが少ない場合に、タスクが自動で配置され、起動します。
+
+```yaml
+  LogstashService:
+    Type: AWS::ECS::Service
+    Properties:
+      DesiredCount: 2
+```
+
 # キャパシティの推測をやめる
-FargateのAutoScaling、CapacityProviderを利用することで、
+FargateはCapacityProvider、AutoScalingを利用することで、サーバリソースおよび、アプリケーションリソースを
+
