@@ -5,6 +5,7 @@ type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["AWS", "CloudFormation"]
 published: false
 ---
+
 # 初めに
 生産技術部で製品の検査工程を担当しているエンジニアです。工場のデータを見える化するため、AWS上にシステムを構築しています。設計の原則にベストプラクティスとして記載されている内容を実践し、実装に詰まったところを整理します。
 
@@ -20,9 +21,7 @@ DirectConnectを利用し、オンプレミス環境とAWS間を接続してい�
 * 障害から自動的に復旧する
 * オートメーションで変更を管理する
 
-
 ![](/images/article-0002/elastic-stack-on-aws-architecture.png)
-
 
 # 水平方向にスケールしてワークロード全体の可用性を高める
 ## オンプレミス環境とAWS間の可用性について
@@ -78,8 +77,6 @@ OpenSearchのエンドポイントはドメインエンドポイントとなり�
 
 https://zenn.dev/s_tomoyuki/articles/76d8ade04df397
 
-
-
 # 障害から自動的に復旧する
 ECSを利用し、`DesiredCount`を設定することで、クラスタ内に指定した数のタスクが走ることを維持することができます。一つのタスクが止まり指定した数よりもタスクが少ない場合に、タスクが自動で配置され、起動します。
 
@@ -91,5 +88,28 @@ ECSを利用し、`DesiredCount`を設定することで、クラスタ内に指
 ```
 
 # キャパシティの推測をやめる
-FargateはCapacityProvider、AutoScalingを利用することで、サーバリソースおよび、アプリケーションリソースを
+設計の原則に記載されているように、オンプレミスのワークロードにおける障害の一般的な原因はリソースの飽和状態で、ワークロードに対する需要がそのワークロードのキャパシティーを超えたときに発生します。
+ECSのタスクに対してApplicationAutoScalingを設定することで、タスクのワークロード使用率をモニタリングし、タスクの追加と削除を自動で行います。
+
+https://aws.amazon.com/jp/premiumsupport/knowledge-center/ecs-fargate-service-auto-scaling/
+
+以下では、タスクの最小数を３、最大数を６として設定しています。
+
+```yaml
+  ServiceScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MinCapacity: 3
+      MaxCapacity: 6
+```
+
+ApplicationAutoScalingはCloudWatchによりタスクのワークロードをモニタリングします。以下の参考では、CPUの使用率を監視し、70%を上回った時にスケールアウトし、50%を下回った時にスケールインするように設定しています。
+
+[CloudFormationの参考設定](https://github.com/TomoyukiSugiyama/ElasticStack/pull/28/files)
+
+## 番外：キャパシティプロバイダによるコスト最適化
+ECSはキャパシティプロバイダを設定することで、クラスタ内のタスクで使用するインフラストラクチャを管理することができます。Fargateでは、FargateとFargate Spotキャパシティーの両方を使用することができ、Fargate Spotを使用すると、割り込み許容のあるECSのタスクをFargateの料金と比較して割引料金で実行することができます。
+
+https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/developerguide/fargate-capacity-providers.html
+
 
