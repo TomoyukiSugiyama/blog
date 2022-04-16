@@ -3,7 +3,7 @@ title: "AWSにおける信頼性を考慮した構成の実践（社内システ
 emoji: "🐳"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["aws", "cloudformation", "ecs", "fargate"]
-published: false
+published: true
 ---
 
 # 初めに
@@ -14,7 +14,7 @@ https://docs.aws.amazon.com/ja_jp/wellarchitected/latest/reliability-pillar/desi
 # 信頼性を考慮した構成とポイント
 DirectConnectを利用し、オンプレミス環境とAWS間を接続しています。社内限定のシステムのため、Internet Gatewayは利用せずPrivate Subnetに閉じています。インターネットへの接続が必要なサービスは全てPrivateLinkで接続しています。
 
-設計の原則に基づき、以下の３点を実践しました。これらを実践する上でのポイントを紹介します。
+設計の原則に基づき、以下の３点を実践しました。これらを実践する上で検討したことを紹介します。
 
 * 水平方向にスケールしてワークロード全体の可用性を高める
 * キャパシティの推測をやめる
