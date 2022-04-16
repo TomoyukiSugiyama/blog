@@ -14,14 +14,18 @@ https://docs.aws.amazon.com/ja_jp/wellarchitected/latest/reliability-pillar/desi
 # 信頼性を考慮した構成とポイント
 DirectConnectを利用し、オンプレミス環境とAWS間を接続しています。社内限定のシステムのため、Internet Gatewayは利用せずPrivate Subnetに閉じています。インターネットへの接続が必要なサービスは全てPrivateLinkで接続しています。
 
-設計の原則に基づき、以下の４点を実践しました。これらを実践する上でのポイントを紹介します。
+設計の原則に基づき、以下の３点を実践しました。これらを実践する上でのポイントを紹介します。
 
 * 水平方向にスケールしてワークロード全体の可用性を高める
 * キャパシティの推測をやめる
 * 障害から自動的に復旧する
-* オートメーションで変更を管理する
 
 ![](/images/article-0002/elastic-stack-on-aws-architecture.png)
+
+具体的な実装は、以下のソースコードを参照してください。
+※ただし、実際のものとは異なり、DirectConnectで接続する設定にはなっていません。
+
+https://github.com/TomoyukiSugiyama/ElasticStack
 
 # 水平方向にスケールしてワークロード全体の可用性を高める
 ## オンプレミス環境とAWS間の可用性について
@@ -30,7 +34,7 @@ DirectConnectを利用し、オンプレミス環境とAWS間を接続してい�
 https://www.slideshare.net/AmazonWebServicesJapan/20200219-aws-black-belt-online-seminar-aws
 
 ##  vpc内のリソースの可用性について
-vpc内の各リソースは３つのAZに配置することで、あるAZに障害が起きても、サービスを停止することなく稼働し続けられるようにしています。Fargate上のタスク、OpenSearch上のノードが単一障害点にならないように、ELB（NLBとALB）を配置し死活監視を行います。これにより単一の障害がワークロード全体に与える影響を低減しています。また、ELBを用いることで、負荷分散が可能になります。ALBはラウンドロビン、NLBはフローハッシュアルゴリズムによってリクエストをバックエンドのリソースにルーティングを行います。
+vpc内の各リソースは３つのAZに配置することで、あるAZに障害が起きても、サービスを停止することなく稼働し続けられるようにしています。Fargate上のタスク、OpenSearch上のノードが単一障害点にならないように、ELB（NLBとALB）を配置し死活監視を行います。これにより単一の障害がワークロード全体に与える影響を低減しています。また、ELBを用いることで、負荷分散が可能になります。ALBはラウンドロビン、NLBはフローハッシュアルゴリズムによってリクエストをバックエンドのリソースにルーティングを行います。ELB自体についても、自動ですケースするため、ELBがボトルネックになることはありません。
 
 https://d1.awsstatic.com/webinars/jp/pdf/services/20191029_AWS-Blackbelt_ELB.pdf
 
@@ -88,8 +92,7 @@ ECSを利用し、`DesiredCount`を設定することで、クラスタ内に指
 ```
 
 # キャパシティの推測をやめる
-設計の原則に記載されているように、オンプレミスのワークロードにおける障害の一般的な原因はリソースの飽和状態で、ワークロードに対する需要がそのワークロードのキャパシティーを超えたときに発生します。
-ECSのタスクに対してApplicationAutoScalingを設定することで、タスクのワークロード使用率をモニタリングし、タスクの追加と削除を自動で行います。
+設計の原則に記載されているように、オンプレミスのワークロードにおける障害の一般的な原因はリソースの飽和状態で、ワークロードに対する需要がそのワークロードのキャパシティーを超えたときに発生します。ECSのタスクに対してApplicationAutoScalingを設定することで、タスクのワークロード使用率をモニタリングし、タスクの追加と削除を自動で行います。
 
 https://aws.amazon.com/jp/premiumsupport/knowledge-center/ecs-fargate-service-auto-scaling/
 
@@ -112,4 +115,5 @@ ECSはキャパシティプロバイダを設定することで、クラスタ�
 
 https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/developerguide/fargate-capacity-providers.html
 
-
+# 最後に
+素人ながら、信頼性を考慮して設計を行いました。運用面の検討や、セキュリティについても検討しましたので、別のブログで紹介したいと思います。
