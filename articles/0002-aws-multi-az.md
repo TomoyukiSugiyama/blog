@@ -2,7 +2,7 @@
 title: "AWSにおける信頼性を考慮した構成の実践（社内システム）"
 emoji: "🐳"
 type: "tech" # tech: 技術記事 / idea: アイデア
-topics: ["AWS", "CloudFormation"]
+topics: ["aws", "cloudformation", "ecs", "fargate"]
 published: false
 ---
 
@@ -39,7 +39,7 @@ vpc内の各リソースは３つのAZに配置することで、あるAZに障�
 https://d1.awsstatic.com/webinars/jp/pdf/services/20191029_AWS-Blackbelt_ELB.pdf
 
 
-OpenSearchは、３つのAZに３つのマスターノードを配置することでダウンタイムをなく、２つの専用マスターノードがマスターノードを選択することができます。
+OpenSearchは、３つのAZに３つのマスターノードを配置することでダウンタイムをなく、残りの２つの専用マスターノードがマスターを選択することができます。
 
 https://docs.aws.amazon.com/ja_jp/opensearch-service/latest/developerguide/managedomains-multiaz.html
 
@@ -116,4 +116,4 @@ ECSはキャパシティプロバイダを設定することで、クラスタ�
 https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/developerguide/fargate-capacity-providers.html
 
 # 最後に
-素人ながら、信頼性を考慮して設計を行いました。運用面の検討や、セキュリティについても検討しましたので、別のブログで紹介したいと思います。
+素人ながら、信頼性を考慮して設計を行いました。負荷試験などももちろん実施したことがないため、検証はこれから勉強しながら実施していきます。運用面の検討や、セキュリティについても検討しましたので、別の記事で紹介したいと思います。
