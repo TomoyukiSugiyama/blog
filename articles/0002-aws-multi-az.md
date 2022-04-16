@@ -34,7 +34,7 @@ https://github.com/TomoyukiSugiyama/ElasticStack
 https://www.slideshare.net/AmazonWebServicesJapan/20200219-aws-black-belt-online-seminar-aws
 
 ##  vpc内のリソースの可用性について
-vpc内の各リソースは３つのAZに配置することで、あるAZに障害が起きても、サービスを停止することなく稼働し続けられるようにしています。Fargate上のタスク、OpenSearch上のノードが単一障害点にならないように、ELB（NLBとALB）を配置し死活監視を行います。これにより単一の障害がワークロード全体に与える影響を低減しています。また、ELBを用いることで、負荷分散が可能になります。ALBはラウンドロビン、NLBはフローハッシュアルゴリズムによってリクエストをバックエンドのリソースにルーティングを行います。ELB自体についても、自動ですケースするため、ELBがボトルネックになることはありません。
+vpc内の各リソースは３つのAZに配置することで、あるAZに障害が起きても、サービスを停止することなく稼働し続けられるようにしています。Fargate上のタスク、OpenSearch上のノードが単一障害点にならないように、ELB（NLBとALB）を配置し死活監視を行います。これにより単一の障害がワークロード全体に与える影響を低減しています。また、ELBを用いることで、負荷分散が可能になります。ALBはラウンドロビン、NLBはフローハッシュアルゴリズムによってリクエストをバックエンドのリソースにルーティングを行います。ELB自体についても、自動でスケールするため、ELBがボトルネックになることはありません。
 
 https://d1.awsstatic.com/webinars/jp/pdf/services/20191029_AWS-Blackbelt_ELB.pdf
 
