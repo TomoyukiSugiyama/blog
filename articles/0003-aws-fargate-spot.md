@@ -3,7 +3,7 @@ title: "Lambda(golang)でFargate Spotの終了通知を受けたECSのタスク�
 emoji: "🐳"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [aws, lambda, fargate, ecs, cloudformation]
-published: false
+published: true
 ---
 # 初めに
 生産技術部で製品の検査工程を担当しているエンジニアです。今回は、Fargate spot上のECSに中断通知が来た時のELBに対するDeregisterTargetの実行が保証されない課題に対して取り組みました。
