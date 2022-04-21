@@ -18,7 +18,7 @@ https://d1.awsstatic.com/webinars/jp/pdf/services/202109_AWS_Black_Belt_Containe
 
 https://github.com/TomoyukiSugiyama/ElasticStack/pull/35/files#diff-e294b70d2a4a1e225aa9f6a19dc7fff8942e8fa32698e9b7ca742e1703862c89R39
 
-Clusterのデフォルト値、Serviceに実際に使用するCapacity Providerを設定します。Baseは最小実行タスク数を示し、以下の例では２つのタスクがFargateで実行されます。Weightは実行するタスクの総数に対する相対的な割合を示し、スケールアウトした場合でも、1対1になるようにFargateとFargate Spot上に配置されます。AWSコンソールからは、各タスクの設定を確認するとどちらを利用しているか確認できます。
+Clusterのデフォルト値、Serviceに実際に使用するCapacity Providerを設定します。Baseは最小実行タスク数を示し、以下の例では２つのタスクがFargateで実行されます。Weightは実行するタスクの総数に対する相対的な割合を示し、スケールアウトした場合でも、1対1になるようにFargateとFargate Spot上にタスクが配置されます。AWSコンソールからは、各タスクの設定を確認するとどちらを利用しているか確認できます。
 
 注意するポイントは、ServiceにCapacityProviderStrategyとLaunchTypeを両方設定することは出来ないことです。
 
@@ -67,12 +67,12 @@ https://github.com/TomoyukiSugiyama/ElasticStack/pull/35/files#diff-5151c8e56ed3
 
 Event Bridgeから終了通知を受け取り、対象のタスクをNLBのターゲットから解除します。
 
-1. Event Bridgeからイベントを受け取り予め要した構造体に必要なデータを格納
+1. Event Bridgeからイベントを受け取り予め用意した構造体に必要なデータを格納
 2. StopCodeが終了通知でなければ、Lambdaを終了
 3. 対象タスクのIPを取得
 4. 環境変数に設定したAWS::ElasticLoadBalancingV2::LoadBalancerのAmazon Resource Name (以下、ARN)、AWS::ElasticLoadBalancingV2::TargetGroupのARNを取得
 5. aws-lambda-go、aws-sdk-go-v2のライブラリを使用するための初期設定
-6. LoadBalancerのARNからLoadbalancerを取得
+6. LoadBalancerのARNからLoadBalancerを取得
 7. TargetGroupのARNからTargetGroupを取得
 8. TargetGroupに対象タスクのIPがあれば登録を解除
 
