@@ -9,10 +9,10 @@ published: false
 生産技術部で製品の検査工程を担当しているエンジニアです。AWSのセキュリティ対応のため、GuardDutyを利用しています。GuardDutyを利用することで、悪意のあるアクティビティや異常な動作を継続的にモニタリングすることができます。しかし、検知した結果に気が付かなければ意味がありません。チャットツールに結果を転送することで、早急な対応ができる体制を目指します。
 
 # Slack/Teamsへの通知方法
-脅威を検知した結果は、自動的にEventBridge(旧Amazon CloudWatch Events)に送信されるため、EventBridgeでイベントをトリガし、SNSに転送します。
+脅威を検知した結果は、自動的にEventBridge(旧Amazon CloudWatch Events)に送信されるため、EventBridgeでイベントをトリガします。
 
-* Slackを利用されている場合は、Chatbotとの連携が可能なため、ChatbotをSNSのターゲットにします。
-* Teamsを利用されている場合は、LambdaをSNSのターゲットとし、Lambdaで結果を加工してIncoming WebhookでTeamsに転送します。
+* Slackを利用されている場合は、SNSに転送します。Chatbotとの連携が可能なため、ChatbotをSNSのターゲットにします。
+* Teamsを利用されている場合は、LambdaをEventBridgeのターゲットとし、Lambdaで結果を加工してIncoming WebhookでTeamsに転送します。
 
 ![](/images/article-0004/guardduty-notification.png)
 
@@ -93,7 +93,7 @@ ChatbotとSlack間の疎通は、ChatbotのAWSコンソールから、「テス�
 
 ![](/images/article-0004/chatbot-test.png)
 
-GuardDutyからSlackまでの疎通はGuardDutyのAWSコンソールから「結果サンプルを生成」をクリックすることで確認できます。Slackには以下のようなメッセージが送信されます。
+GuardDutyからSlackまでの疎通はGuardDutyのAWSコンソールから確認できます。Slackには以下のようなメッセージが送信されます。
 
 ![](/images/article-0004/guardduty-to-slack.png)
 
