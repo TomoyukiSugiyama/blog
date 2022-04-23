@@ -65,6 +65,8 @@ Resources:
     Type: AWS::Chatbot::SlackChannelConfiguration
     Properties:
       ConfigurationName: GuardDutyNotification
+      GuardrailPolicies:
+        - "arn:aws:iam::aws:policy/AWSAppMeshEnvoyAccess"
       IamRoleArn: !GetAtt ChatBotRole.Arn
       LoggingLevel: NONE
       SlackChannelId: "{{resolve:ssm:GuardDutySlackChannelId:1}}"
