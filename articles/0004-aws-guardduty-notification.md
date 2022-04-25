@@ -11,7 +11,7 @@ published: false
 # Slack/Teamsへの通知方法
 脅威を検知した結果は、自動的にEventBridge(旧Amazon CloudWatch Events)に送信されるため、EventBridgeでイベントをトリガします。
 
-* Slackを利用されている場合は、SNSに転送します。Chatbotとの連携が可能なため、ChatbotをSNSのターゲットにします。
+* Slackを利用されている場合は、EventBridgeからSNSに転送します。SlackはChatbotとの連携が可能なため、ChatbotをSNSのターゲットにします。
 * Teamsを利用されている場合は、LambdaをEventBridgeのターゲットとし、Lambdaで結果を加工してIncoming WebhookでTeamsに転送します。
 
 ![](/images/article-0004/guardduty-notification.png)
@@ -21,11 +21,14 @@ GuardDutyはCloudTrail、Kubernetes、VPCフローログ、DNSログ等をもと
 
 https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/guardduty_findings_cloudwatch.html
 
-SNSのエンドポイントにはChatbotのAPI `https://global.sns-api.chatbot.amazonaws.com` を指定します。ChatBotは予め、AWSコンソールから、Slackと連携しておきます。CloudformationのChatBotには、SnsTopicArnsにSNSトピックのARNを指定し、SlackChannelIdとSlackWorkspaceIdを指定することで、通知することができます。SlackChannelIdは、対象のSlackチャンネルを右クリックし、「リンクをコピー」を選択します。コピーしたURLの最後のスラッシュ以降の文字列が対象のIdになります。
+SNSのエンドポイントにはChatbotのAPI `https://global.sns-api.chatbot.amazonaws.com` を指定します。ChatBotはあらかじめAWSコンソールから、Slackと連携しておきます。CloudformationのChatBotには以下を設定します。
 
-`https://sample.slack.com/archives/XXXXXXXXXXX`
+* SnsTopicArnsにSNSトピックのARNを指定
+* SlackChannelIdを指定する。対象のSlackチャンネルを右クリックし、「リンクをコピー」を選択します。コピーしたURLの最後のスラッシュ以降の文字列が対象のIdになります。  
+  `https://sample.slack.com/archives/XXXXXXXXXXX`
+* SlackWorkspaceIdを指定する。ChatBotのAWSコンソールから「結果サンプルの生成」をクリックすることで確認できます。
 
-SlackWorkspaceIdは、ChatBotのAWSコンソールから「結果サンプルの生成」をクリックすることで確認できます。これらのIdはパラメータストアに保存し、読み込んで使用しています。
+これらのIdはパラメータストアに保存し、読み込んで使用しています。
 
 ```yaml
 AWSTemplateFormatVersion: "2010-09-09"
@@ -55,6 +58,8 @@ Resources:
           Id: sns-topic
   Topic:
     Type: AWS::SNS::Topic
+    Properties:
+      KmsMasterKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/sns"
   Subscription:
     Type: AWS::SNS::Subscription
     Properties:
@@ -66,7 +71,7 @@ Resources:
     Properties:
       ConfigurationName: GuardDutyNotification
       GuardrailPolicies:
-        - "arn:aws:iam::aws:policy/AWSAppMeshEnvoyAccess"
+        - "arn:aws:iam::aws:policy/ReadOnlyAccess"
       IamRoleArn: !GetAtt ChatBotRole.Arn
       LoggingLevel: NONE
       SlackChannelId: "{{resolve:ssm:GuardDutySlackChannelId:1}}"
@@ -95,7 +100,7 @@ ChatbotとSlack間の疎通は、ChatbotのAWSコンソールから、「テス�
 
 ![](/images/article-0004/chatbot-test.png)
 
-GuardDutyからSlackまでの疎通はGuardDutyのAWSコンソールから確認できます。Slackには以下のようなメッセージが送信されます。
+GuardDutyからSlackまでの疎通はGuardDutyのAWSコンソールから設定の「結果サンプルの生成」をクリックすることで結果のサンプルが自動で生成され、確認することができます。Slackには以下のようなメッセージが送信されます。
 
 ![](/images/article-0004/guardduty-to-slack.png)
 
@@ -142,7 +147,7 @@ Resources:
       Handler: guardduty-notification
       Role: !GetAtt LambdaRole.Arn
       Code:
-        S3Bucket: lambda-m090d3wnw8nug47yfdcw3-artifact
+        S3Bucket: "{{resolve:ssm:S3BacketLambda:1}}"
         S3Key: guardduty-notification.zip
       Runtime: go1.x
       ReservedConcurrentExecutions: 1
@@ -175,7 +180,7 @@ Resources:
 EventBridgeから受け取ったイベントを加工し、必要な情報を環境変数から読み込んだTeamsUrlに対して、送信します。
 
 ```go
-// main GuardDutyが検知した異常を通知します。
+/// main GuardDutyが脅威検出した結果を通知します。
 package main
 
 import (
@@ -191,13 +196,20 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
+type Service struct {
+	EventFirstSeen string `json:"eventFirstSeen"`
+	EventLastSeen  string `json:"eventLastSeen"`
+	Count          int    `json:"count"`
+}
+
 type GuardDutyEvent struct {
-	Severity    string `json:"severity"`
-	AccountId   string `json:"accountId"`
-	Id          string `json:"id"`
-	Type        string `json:"type"`
-	Region      string `json:"region"`
-	Description string `json:"description"`
+	AccountId   string  `json:"accountId"`
+	Id          string  `json:"id"`
+	Type        string  `json:"type"`
+	Region      string  `json:"region"`
+	Service     Service `json:"service"`
+	Severity    float32 `json:"severity"`
+	Description string  `json:"description"`
 }
 
 type Fact struct {
@@ -227,26 +239,31 @@ func HandleLambdaEvent(_ context.Context, event events.CloudWatchEvent) {
 	}
 	TeamsUrl := os.Getenv("TeamsUrl")
 
+	var color string
+	var servirityCategory string
+	if guardDutyEvent.Severity >= 7.0 {
+		color = "#ff0000"
+		servirityCategory = "High"
+	} else if guardDutyEvent.Severity >= 4.0 {
+		color = "#fd7e00"
+		servirityCategory = "MEDIUM"
+	} else {
+		color = "#0000ff"
+		servirityCategory = "LOW"
+	}
+
 	facts := []Fact{
-		{Name: "Severity", Value: guardDutyEvent.Severity},
-		{Name: "Type", Value: guardDutyEvent.Type},
+		{Name: "Finding type", Value: guardDutyEvent.Type},
 		{Name: "Description", Value: guardDutyEvent.Description},
+		{Name: "Severity", Value: servirityCategory},
+		{Name: "First Seen", Value: guardDutyEvent.Service.EventFirstSeen},
+		{Name: "Last Seen", Value: guardDutyEvent.Service.EventLastSeen},
+		{Name: "Threat Count", Value: strconv.Itoa(guardDutyEvent.Service.Count)},
 	}
 	sections := []Section{{Facts: facts}}
 
-	severity, err := strconv.ParseFloat(guardDutyEvent.Severity, 64)
-	if err != nil {
-		fmt.Printf("%s\n", err.Error())
-		return
-	}
-	var color string
-	if severity >= 7.0 {
-		color = "#ff0000"
-	} else {
-		color = "#ffff00"
-	}
-	pipelineURL := "https://console.aws.amazon.com/guardduty/home?region=" + guardDutyEvent.Region + "#/findings?search=id=" + guardDutyEvent.Id
-	targets := []Target{{Os: "default", Uri: pipelineURL}}
+	guarddutyURL := "https://console.aws.amazon.com/guardduty/home?region=" + guardDutyEvent.Region + "#/findings?search=id=" + guardDutyEvent.Id
+	targets := []Target{{Os: "default", Uri: guarddutyURL}}
 	links := []Link{{Type: "OpenUri", Name: "Jump To GuardDuty", Targets: targets}}
 
 	payload, err := json.Marshal(struct {
@@ -260,7 +277,7 @@ func HandleLambdaEvent(_ context.Context, event events.CloudWatchEvent) {
 		Summary:         "Summary",
 		Type:            "MessageCard",
 		ThemeColor:      color,
-		Title:           "GuardDuty",
+		Title:           "GuardDuty Finding | " + guardDutyEvent.Region + " | Account: " + guardDutyEvent.AccountId,
 		Sections:        sections,
 		PotentialAction: links,
 	})
@@ -286,8 +303,13 @@ func main() {
 ```
 
 # Teamsへの通知の確認
-LambdaとTeams間の疎通は、LambdaのAWSコンソールから、テストイベントを作成し「テスト」をクリックすることで確認できます。Teamsには以下のようなメッセージが送信されます。
+LambdaとTeams間の疎通は、LambdaのAWSコンソールから、テストイベントを作成し「テスト」をクリックすることで確認できます。テストイベントのイベントJSONは、EventBridgeのAWSコンソールからルールを作成に進み、サンプルイベントを「GuardDuty Finding」にすることで、簡単にサンプルを取得することができます。取得したサンプルをもとに、Lambdaを実行するとTeamsには以下のようなメッセージが送信されます。
 
 ![](/images/article-0004/lambda-test.png)
 
+GuardDutyからTeams間の疎通は、Slackの場合と同様に「結果サンプルの生成」をクリックすることで確認できます。
+
+![](/images/article-0004/guardduty-to-teams.png)
+
 # 最後に
+GuardDutyからSlack/Teamsに脅威検知結果を送信する仕組みを実装しました。
