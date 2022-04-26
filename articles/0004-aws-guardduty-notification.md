@@ -3,7 +3,7 @@ title: "GuardDutyの脅威検出結果をSlack/Teamsに通知する"
 emoji: "🐳"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["aws", "guardduty", "lambda", "cloudformation", "golang"]
-published: false
+published: true
 ---
 # 初めに
 生産技術部で製品の検査工程を担当しているエンジニアです。AWSのセキュリティ対応のため、GuardDutyを利用しています。GuardDutyを利用することで、悪意のあるアクティビティや異常な動作を継続的にモニタリングすることができます。しかし、検知した結果に気が付かなければ意味がありません。チャットツールに結果を転送することで、早急な対応ができる体制を目指します。
@@ -308,4 +308,4 @@ GuardDutyからTeams間の疎通は、Slackの場合と同様に「結果サン�
 ![](/images/article-0004/guardduty-to-teams.png)
 
 # 最後に
-GuardDutyからSlack/Teamsに脅威検知結果を送信する仕組みを実装しました。
+GuardDutyからSlack/Teamsに脅威検知結果を送信する仕組みを実装しました。ChatBotであればお手軽で、Lambdaであれば自由にカスタマイズでき、どちらも良かったと思います。GuardDutyの結果だけでなく、CodePipelineの実行結果なども同様の仕組みでチャットツールに通知することができますので、ぜひ試してみてください。
