@@ -2,7 +2,7 @@
 title: "Lambda(golang)でFargate Spotの終了通知を受けたECSのタスクをNLBから切り離す"
 emoji: "🐳"
 type: "tech" # tech: 技術記事 / idea: アイデア
-topics: [aws, lambda, fargate, ecs, cloudformation]
+topics: ["aws", "lambda", "fargate", "ecs", "cloudformation"]
 published: true
 ---
 # 初めに

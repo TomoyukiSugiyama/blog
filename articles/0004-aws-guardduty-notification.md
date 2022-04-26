@@ -2,7 +2,7 @@
 title: "GuardDutyの脅威検出結果をSlack/Teamsに通知する"
 emoji: "🐳"
 type: "tech" # tech: 技術記事 / idea: アイデア
-topics: ["aws", "guardduty", "lambda", "cloudformation"]
+topics: ["aws", "guardduty", "lambda", "cloudformation", "golang"]
 published: false
 ---
 # 初めに
@@ -17,16 +17,16 @@ published: false
 ![](/images/article-0004/guardduty-notification.png)
 
 # Slackを利用する場合のCloudformation
-GuardDutyはCloudTrail、Kubernetes、VPCフローログ、DNSログ等をもとに脅威検知を行います。ただし、これらの設定は不要であり、GuardDutyは有効にするだけで、脅威検知が自動的に開始されます。EventBridgeは、以下に記載されているイベントのルールを設定し、TargetにSNSのトピックを指定します。
+GuardDutyはCloudTrail、Kubernetes、VPCフローログ、DNSログ等をもとに脅威検知を行います。ただし、これらの設定は不要であり、GuardDutyを有効にするだけで脅威検知が自動的に開始されます。EventBridgeは、以下に記載されているイベントのルールを設定し、TargetにSNSのトピックを指定します。
 
 https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/guardduty_findings_cloudwatch.html
 
-SNSのエンドポイントにはChatbotのAPI `https://global.sns-api.chatbot.amazonaws.com` を指定します。ChatBotはあらかじめAWSコンソールから、Slackと連携しておきます。CloudformationのChatBotには以下を設定します。
+SNSのエンドポイントにはChatbotのAPI `https://global.sns-api.chatbot.amazonaws.com` を指定します。ChatBotはあらかじめAWSコンソールからSlackと連携しておきます。CloudformationのChatBotには以下を設定します。
 
-* SnsTopicArnsにSNSトピックのARNを指定
-* SlackChannelIdを指定する。対象のSlackチャンネルを右クリックし、「リンクをコピー」を選択します。コピーしたURLの最後のスラッシュ以降の文字列が対象のIdになります。  
+* SnsTopicArnsにSNSトピックのARNを指定します。
+* SlackChannelIdを指定します。対象のSlackチャンネルを右クリックし、「リンクをコピー」を選択します。コピーしたURLの最後のスラッシュ以降の文字列が対象のIdになります。  
   `https://sample.slack.com/archives/XXXXXXXXXXX`
-* SlackWorkspaceIdを指定する。ChatBotのAWSコンソールから「結果サンプルの生成」をクリックすることで確認できます。
+* SlackWorkspaceIdを指定する。ChatBotのAWSコンソールから確認できます。
 
 これらのIdはパラメータストアに保存し、読み込んで使用しています。
 
@@ -58,8 +58,6 @@ Resources:
           Id: sns-topic
   Topic:
     Type: AWS::SNS::Topic
-    Properties:
-      KmsMasterKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/sns"
   Subscription:
     Type: AWS::SNS::Subscription
     Properties:
@@ -91,8 +89,6 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/ReadOnlyAccess
-        - arn:aws:iam::aws:policy/AWSSupportAccess
-        - arn:aws:iam::aws:policy/AWSIncidentManagerResolverAccess
 ```
 
 # Slackへの通知の確認
@@ -100,12 +96,12 @@ ChatbotとSlack間の疎通は、ChatbotのAWSコンソールから、「テス�
 
 ![](/images/article-0004/chatbot-test.png)
 
-GuardDutyからSlackまでの疎通はGuardDutyのAWSコンソールから設定の「結果サンプルの生成」をクリックすることで結果のサンプルが自動で生成され、確認することができます。Slackには以下のようなメッセージが送信されます。
+GuardDutyからSlackまでの疎通はGuardDutyのAWSコンソールから設定の「結果サンプルの生成」をクリックすることで結果のサンプルが自動で生成され、確認することができます。Slackには以下のようなメッセージが送信されます。新しい結果は、５分以内にEventBridgeに送付されます。
 
 ![](/images/article-0004/guardduty-to-slack.png)
 
 # Teamsを利用する場合のCloudformation
-Slackへ通知する場合との違いは、EventBridgeのターゲットを、Lambdaに設定するところです。
+Slackへ通知する場合との違いは、EventBridgeのターゲットをLambdaに設定するところです。
 
 ```yaml
 AWSTemplateFormatVersion: "2010-09-09"
@@ -177,7 +173,7 @@ Resources:
 ```
 
 # Teamsを利用する場合のLambda
-EventBridgeから受け取ったイベントを加工し、必要な情報を環境変数から読み込んだTeamsUrlに対して、送信します。
+EventBridgeから受け取ったイベントを加工し、必要な情報を環境変数から読み込んだTeamsUrlに対して、送信します。実装の手順は、GuardDutyからEventBridgeに送付されるイベントのサンプルを参考に構造体を作成し、必要なデータを抽出します。TeamsのWebhookのデータフォーマットに加工してPOSTすれば完了です。
 
 ```go
 /// main GuardDutyが脅威検出した結果を通知します。
@@ -303,7 +299,7 @@ func main() {
 ```
 
 # Teamsへの通知の確認
-LambdaとTeams間の疎通は、LambdaのAWSコンソールから、テストイベントを作成し「テスト」をクリックすることで確認できます。テストイベントのイベントJSONは、EventBridgeのAWSコンソールからルールを作成に進み、サンプルイベントを「GuardDuty Finding」にすることで、簡単にサンプルを取得することができます。取得したサンプルをもとに、Lambdaを実行するとTeamsには以下のようなメッセージが送信されます。
+LambdaとTeams間の疎通は、LambdaのAWSコンソールから、テストイベントを作成し「テスト」をクリックすることで確認できます。テストイベントのイベントJSONは、EventBridgeのAWSコンソールからサンドボックスに進み、サンプルイベントを「GuardDuty Finding」にすることで、簡単にサンプルを取得することができます。取得したサンプルをもとに、Lambdaを実行するとTeamsには以下のようなメッセージが送信されます。
 
 ![](/images/article-0004/lambda-test.png)
 
