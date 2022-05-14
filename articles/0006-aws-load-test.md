@@ -111,16 +111,16 @@ $ docker context rm demo_ecs_context
 
 切り替えたコンテキストで起動すると、CloudFormationの実行が開始します。CloudFormationのコンソールから起動状態が確認できます。ECSだけで無くCloudMap、ELB、SecurityGroupなども自動で生成されるため、細かい設定が不要です。
 
-```
+```bash
 $ docker compose up
 ```
 
 # うまく立ち上がらない時
-この方法は、パブリックサブネットが２つ以上必要であることや、同じアベイラビリティゾーンに複数のサブネットがあるとうまく立ち上げることができません。
+この方法は、パブリックサブネットが２つ以上必要であることや、同じアベイラビリティゾーンに複数のサブネットがあることなどの制約があり、うまく立ち上げることができない場合があります。
 
-docker composeにはconvertコマンドが用意されており、エラーがなければCloudFormationファイルを生成することができます。別のVPCなどで立ち上げてみて正常に立ち上がれば、convertコマンドでCloudFormationファイルを生成する。生成されたCloudFormationファイルを編集してCloudFormationで直接立ち上げてみることが簡単に調整できる方法です。
+docker composeにはconvertコマンドが用意されており、エラーがなければ生成されるCloudFormationファイルをファイルに出力することができます。別のVPCなどで立ち上げてみて正常に立ち上がれば、convertコマンドでCloudFormationファイルを生成し、生成されたCloudFormationファイルを編集してCloudFormationで直接立ち上げてみることが簡単に調整できる方法です。
 
-```
+```bash
 $ docker compose convert
 ```
 
