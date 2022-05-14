@@ -7,7 +7,7 @@ published: false
 ---
 
 # 初めに
-生産技術部で製品の検査工程を担当しているエンジニアです。AWS Well-Architected フレームワークの中から運用の優秀性に焦点を当てて、CodePipeline構築からデプロイまでのコード化を紹介します。
+生産技術部で製品の検査工程を担当しているエンジニアです。AWS Well-Architected フレームワークの中から運用の優秀性を参考に、CodePipeline構築からデプロイまでのコード化を実施しましたので紹介します。
 
 https://docs.aws.amazon.com/ja_jp/wellarchitected/latest/operational-excellence-pillar/design-principles.html
 
@@ -16,7 +16,7 @@ AWS CLIをシェルスクリプトから実行し、環境構築を行います�
 
 ![](/images/article-0005/build-environment.png)
 
-AWS CLIをラップした`cfn-stack-ops.sh`を用意し、手元からも簡単にAWS CLIが実行できるようにしています。ParameterStoreに保存したパラメータは、`aws ssm get-parameter`で取得し利用しています。開発環境でも本番環境でも利用できるように、鍵のエイリアス、パラメータ名、S3のバケット名、ECRのリポジトリ名に`dev`もしくは`prod`といったパーティションを名前に付けて作成しました。例)`/${DEPLOY_ENV}/s3/cfn/BucketName`
+AWS CLIをラップした`cfn-stack-ops.sh`を用意し、手元からも簡単にAWS CLIが実行できるようにしています。ParameterStoreに保存したパラメータは、`aws ssm get-parameter`で取得し利用しています。開発環境でも本番環境でも利用できるように、鍵のエイリアス、パラメータ名、S3のバケット名、ECRのリポジトリ名に`dev`もしくは`prod`といったパーティションを付けて作成しました。例)`/${DEPLOY_ENV}/s3/cfn/BucketName`
 
 ```bash
 #!/bin/sh
@@ -312,10 +312,10 @@ Outputs:
 
 ```
 
-## CodeBuildでデプロイIaC化
-buildspecに設定しビルドします。CodeBuildでは、LinterでのCloudformationの検証とLambdaとDockerのビルド、デプロイを実施し、CloudFormationテンプレートをS3にアップロードします。
+## CodeBuildのIaC化
+buildspecに設定しビルドします。CodeBuildでは、LinterでのCloudFormationの検証とLambdaとDockerのビルド、デプロイを実施し、CloudFormationテンプレートをS3にアップロードします。
 
-pre_buildフェーズでは、以下の静的解析ツールを利用させていただいています。個人的には、セキュリティの知識がなく困っていたため、cfn nagに助けられました。Logが取れてない、暗号化されていない等、細かくチェックしてくれます。cfn lintはローカル環境のVSCodeにも導入しているため、逐一チェックしてくれて、無くてはならない存在でした。CloudFormation guardは使い始めたばかりで、まだ使い方がよくわかってないです。
+pre_buildフェーズでは、以下の静的解析ツールを利用させていただいています。個人的には、セキュリティの知識がなく困っていたため、cfn nagに助けられました。Logが取れてない、暗号化されていない等、細かくチェックしてくれます。cfn lintはローカル環境のVSCodeにも導入しているため、逐一チェックしてくれて、無くてはならない存在でした。CloudFormation guardは使い始めたばかりで、まだ使い方がよくわかってないですが強力なツールだと思っています。
 
 * cfn lint  
   https://github.com/aws-cloudformation/cfn-lint
@@ -379,7 +379,6 @@ artifacts:
     - artifact.yaml
 ```
 
-
 Golangで作成したLambdaのコードをフォルダごとにビルドしzipで圧縮するスクリプトです。
 AWS CLIを使ってデプロイします。
 
@@ -412,4 +411,4 @@ done
 # 最後に
 CodePipelineの環境構築から、デプロイまでをIaC化しました。社内で一人で構築を行っていますが、そのうち他の人に引き継ぐタイミングがあると思い、IaC化を行いました。醜いスクリプトなども多いですが、徐々に改善していけば良いと思っています。
 
-運用をコードとして実行するがひとまず完了しましたが、運用に使うスクリプトが、十分に準備できていませんので、今後も作り続けていきたいと思います。
+AWS Well-Architected フレームワークの「運用をコードとして実行する」がひとまず完了しましたが、「障害を予想する」ができていない事などが課題として残っています。運用に使うスクリプトも十分に準備できていませんので、今後も改善し続けていきたいです。
