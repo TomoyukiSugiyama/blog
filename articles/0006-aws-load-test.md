@@ -57,7 +57,7 @@ do
 done
 ```
 
-`docker-compose.yaml`ファイルにLocustを設定します。`x-aws-*`を設定することで、VPCやClusterを指定でき。さまざまな環境に合わせて柔軟に対応できます。設定できる内容はDockerのドキュメントに記載されています。
+`docker-compose.yaml`ファイルにLocustを設定します。`x-aws-*`を設定することで、VPCやClusterを指定でき、さまざまな環境に合わせて柔軟に対応できます。設定できる内容はDockerのドキュメントに記載されています。
 
 https://docs.docker.com/cloud/ecs-integration/#using-existing-aws-network-resources
 
