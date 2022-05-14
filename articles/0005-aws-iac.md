@@ -11,6 +11,10 @@ published: false
 
 https://docs.aws.amazon.com/ja_jp/wellarchitected/latest/operational-excellence-pillar/design-principles.html
 
+具体的な実装はGitHubを参照してください。
+
+https://github.com/TomoyukiSugiyama/ElasticStack
+
 # CodePipeline構築のIaC化
 AWS CLIをシェルスクリプトから実行し、環境構築を行います。CodePipelineだけでなく、デプロイするために必要な鍵やパラメータ、CloudFormationのテンプレートやLambdaのコードを保存するためのS3バケット、ECRも作成します。パラメータ以外は、CloudFormationのテンプレートを利用して作成します。パラメータはセキュアな情報も含まれるため、ローカルに作成したパラメータの設定ファイルをAWS CLIでアップロードしています。
 
@@ -166,12 +170,12 @@ done
 ```
 
 # デプロイのIaC化
-デプロイのフェーズでは、以下の構成をCloudFormationを利用し作成します。
+デプロイのフェーズでは、CloudFormationで以下の構成を作成します。
 
 
 ![](/images/article-0002/elastic-stack-on-aws-architecture.png)
 
-Cloudformationのネストされたスタックを利用し、ファイルを必要な単位に分割し管理します。Lambdaのコード、ECRに保存するイメージはあらかじめ保存しておく必要があるため、CodeBuildでデプロイします。
+CloudFormationのネストされたスタックを利用し、ファイルを必要な単位に分割し管理します。Lambdaのコード、ECRに保存するイメージはあらかじめ保存しておく必要があるため、CodeBuildでデプロイします。
 
 ```yaml
 AWSTemplateFormatVersion: 2010-09-09
