@@ -3,7 +3,7 @@ title: "docker composeを使って負荷試験環境をECS Fargate上に最速�
 emoji: "🐳"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["aws", "ecs", "fargate", "locust", "dockercompose"]
-published: false
+published: true
 ---
 # 初めに
 生産技術部で製品の検査工程を担当しているエンジニアです。AWSに構築したシステムの負荷試験を行うために、AWS上に負荷試験環境を構築しました。AWS上で立ち上げることで十分に負荷をかけることができ、低コストで実現できますが、設定ファイルを準備するのは少し手間です。そこで、docker composeを利用し、短期間でECS Fargateにクラスタを構築する方法を紹介します。
@@ -118,7 +118,7 @@ $ docker compose up
 # うまく立ち上がらない時
 この方法は、パブリックサブネットが２つ以上必要であることや、同じアベイラビリティゾーンに複数のサブネットがあることなどの制約があり、うまく立ち上げることができない場合があります。
 
-docker composeにはconvertコマンドが用意されており、エラーがなければ生成されるCloudFormationファイルをファイルに出力することができます。別のVPCなどで立ち上げてみて正常に立ち上がれば、convertコマンドでCloudFormationファイルを生成し、生成されたCloudFormationファイルを編集してCloudFormationで直接立ち上げてみることが簡単に調整できる方法です。
+docker composeにはconvertコマンドが用意されており、エラーがなければ生成されるCloudFormationファイルを出力することができます。別のVPCなどで立ち上げてみて正常に立ち上がれば、convertコマンドでCloudFormationファイルを生成し、生成されたCloudFormationファイルを編集してCloudFormationで直接立ち上げてみることが簡単に調整できる方法です。
 
 ```bash
 $ docker compose convert
