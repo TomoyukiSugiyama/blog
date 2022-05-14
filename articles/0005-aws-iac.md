@@ -2,8 +2,8 @@
 title: "CodePipelineの構築からデプロイまでの導線をIaC化"
 emoji: "🐳"
 type: "tech" # tech: 技術記事 / idea: アイデア
-topics: ["aws", "cloudformation", "codepipeline", "codebuild"]
-published: false
+topics: ["aws", "cloudformation", "codepipeline", "codebuild", "awscli"]
+published: true
 ---
 
 # 初めに
