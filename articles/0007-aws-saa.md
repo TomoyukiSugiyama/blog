@@ -1,5 +1,5 @@
 ---
-title: "AWS SAAを始めて受験する方のためになる"
+title: "AWS SAAを初受験する方のためになる"
 emoji: "🐳"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["aws", "saa"]
