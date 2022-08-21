@@ -9,7 +9,7 @@ published: false
 この記事は、非ソフトウェアエンジニアが AWS Certified Solutions Architect - Associate (SAA-C02) に合格するためにどのように取り組み、どう感じたのかをまとめた体験記になります。SAA を受験する方が勉強する際の参考になればと思っています。
 
 :::message alert
-SAA-C03 が最新であり、試験ガイドに記載の内容は SAA-C02 と大きく異なるのでご注意ください。SAA-C03の試験ガイドは以下を参照ください。
+SAA-C03 が最新であり、試験ガイドに記載の内容は SAA-C02 と大きく異なるのでご注意ください。SAA-C03 の試験ガイドは以下を参照ください。
 
 https://d1.awsstatic.com/ja_JP/training-and-certification/docs-sa-assoc/AWS-Certified-Solutions-Architect-Associate_Exam-Guide_C03.pdf
 
@@ -34,9 +34,9 @@ https://d1.awsstatic.com/ja_JP/training-and-certification/docs-sa-assoc/AWS-Cert
   [SAA-C03 試験ガイド](https://d1.awsstatic.com/ja_JP/training-and-certification/docs-sa-assoc/AWS-Certified-Solutions-Architect-Associate_Exam-Guide_C03.pdf)
 2. 参考書で知らないサービスを知り、知っているサービスについても理解を深める。  
  [AWS認定資格試験テキスト AWS認定ソリューションアーキテクト - アソシエイト 改訂第2版](https://www.amazon.co.jp/AWS%E8%AA%8D%E5%AE%9A%E8%B3%87%E6%A0%BC%E8%A9%A6%E9%A8%93%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88-AWS%E8%AA%8D%E5%AE%9A%E3%82%BD%E3%83%AA%E3%83%A5%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E3%82%A2%E3%83%BC%E3%82%AD%E3%83%86%E3%82%AF%E3%83%88-%E3%82%A2%E3%82%BD%E3%82%B7%E3%82%A8%E3%82%A4%E3%83%88-%E6%94%B9%E8%A8%82%E7%AC%AC2%E7%89%88-NRI%E3%83%8D%E3%83%83%E3%83%88%E3%82%B3%E3%83%A0%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE/dp/4815607389/ref=asc_df_4815607389/?tag=jpgo-22&linkCode=df0&hvadid=342397001181&hvpos=&hvnetw=g&hvrand=8008101132788475825&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=1009461&hvtargid=pla-1016930256377&psc=1&th=1&psc=1&tag=&ref=&adgrpid=72867581430&hvpone=&hvptwo=&hvadid=342397001181&hvpos=&hvnetw=g&hvrand=8008101132788475825&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=1009461&hvtargid=pla-1016930256377)
-3. 出題されるサービスの特徴を整理する。  
+3. AWS Well-Architected Framework および対象サービスの特徴を整理する。  
   [サービス事の特徴まとめ](https://tomoyukisugiyama.github.io/aws-exam/saa/)
-4. 模擬試験から試験の解き方を理解する。  
+4. 模擬試験から様々なシチュエーションでどのサービスを組み合わせれば良いのかを理解する。  
   [Udemy - 【2022年版】AWS 認定ソリューションアーキテクト アソシエイト模擬試験問題集（6回分390問）](https://www.udemy.com/course/aws-knan/)
 
 :::message alert
@@ -46,3 +46,10 @@ https://d1.awsstatic.com/ja_JP/training-and-certification/docs-sa-assoc/AWS-Cert
 
 # 試験内容を把握
 試験ガイドから、採点方法と試験の対象となる主要ツールを確認し、知っているサービス、知らないサービスを把握しました。各分野の説明に書かれている事を理解することがこの試験の本題であるため、丁寧に読めていなかった事が反省点です。決して、サービスの特徴を暗記して問題に解くことを目的にしない方が良いと思います。SAA-C03 版の試験ガイドでは、スキルや知識との関連性がより具体的に記載されているため、対応付けて勉強していくことをお勧めします。対象のサービス数も SAA-002 版に比べて倍以上になっているため、しっかり時間を確保しておいた方がよさそうです。
+
+# 参考書でサービスを理解
+図で表現されているものも多く、サービスを触った事がなくても理解できるように工夫されているので、触れたことのないサービスが多い方には特にお勧めです。SAA-C02 に対応した参考書を選びましたが、SAA-C03 で必要なサービスについては別途調べて学習する必要があります。また、参考書だけ理解して試験に臨むことはお勧めしません。模擬試験から、より多くのシチュエーションを体験し、サービスを組み合わせて課題を解決していく能力を身に付けておくのが良いかと思います。
+
+# AWS Well-Architected Framework　および対象サービスの特徴を整理
+試験ガイドに記載されている通り [AWS Well-Architected Framework](https://aws.amazon.com/jp/architecture/well-architected/) をベースに試験が組み立てられていますので、まずはここに書かれている内容を理解していくのが良いでしょう。対象サービスの特徴は、参考書に記載されている内容を、試験ガイドに合わせて自分なりに整理し直しました。この作業は、半分趣味みたいなもので非効率なので、やる必要は無いかなと思います。
+ 
