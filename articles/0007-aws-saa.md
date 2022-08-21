@@ -3,7 +3,7 @@ title: "AWS SAA を初受験する方のためになる"
 emoji: "🐳"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["aws", "saa"]
-published: false
+published: true
 ---
 # 初めに
 この記事は、非ソフトウェアエンジニアが AWS Certified Solutions Architect - Associate (SAA-C02) に合格するためにどのように取り組み、どう感じたのかをまとめた体験記になります。SAA を受験する方が勉強する際の参考になればと思っています。
