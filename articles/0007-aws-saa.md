@@ -6,7 +6,7 @@ topics: ["aws", "saa"]
 published: false
 ---
 # 初めに
-この記事は、AWS Certified Solutions Architect - Associate (SAA-C02) に合格するためにどの様に勉強すれば良いのかを実体験とともにまとめたものになります。
+この記事は、非ソフトウェアエンジニアが AWS Certified Solutions Architect - Associate (SAA-C02) に合格するためにどのように取り組み、どう感じなのかをまとめた体験記になります。
 
 # エビデンス
 初めて SAA を受験し、合格した結果です。
