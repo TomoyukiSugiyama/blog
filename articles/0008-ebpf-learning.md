@@ -15,6 +15,7 @@ https://qiita.com/advent-calendar/2025/uzabase
 # eBPF について紹介
 
 ## eBPF とは
+eBPF は Linux カーネルに導入された革新的な技術です。カーネルのソースコード変更やカーネルモジュールのロードを必要とせず、カーネルの機能を安全に効率的に拡張する技術です。eBPF の中心的な機能はプログラムです。eBPF のカスタムプログラムをカーネルの内部に動的にロードし、カーネル内の様々なポイントにアタッチすることで、関数のように実行することができます。
 
 https://ebpf.io/what-is-ebpf/
 
@@ -24,6 +25,7 @@ https://ebpf.io/what-is-ebpf/
 ## eBPF の特徴
 
 ## eBPF を利用したサービス
+eBPF はネットワーク、セキュリティ、可観測性など様々な分野で利用可能な技術となります。そのために、eBPF を利用したサービスが数多く提供されるようになりました。
 
 https://ebpf.io/applications/
 
@@ -73,3 +75,6 @@ https://tetragon.io/
 * [eBPF](https://docs.ebpf.io/)
 * [XDP](https://prototype-kernel.readthedocs.io/en/latest/networking/XDP/introduction.html)
 * [AYA](https://docs.rs/aya/latest/aya/index.html)
+
+書籍
+「入門 eBPF」
