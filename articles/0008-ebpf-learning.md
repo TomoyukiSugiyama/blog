@@ -5,7 +5,7 @@ type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["eBPF"]
 published: false
 ---
-# はじめに
+# 概要
 本記事は Uzabase Advent Calendar 2025 の 22 日目の記事です。
 
 https://qiita.com/advent-calendar/2025/uzabase
@@ -65,6 +65,8 @@ https://docs.rs/aya/latest/aya/index.html
 Tetragon は、Kubernetes に対応した柔軟なセキュリティ観測およびランタイム強制ツールであり、eBPF を使用してポリシーとフィルタリングを直接適用することで、観測オーバーヘッドの削減、あらゆるプロセスの追跡、ポリシーのリアルタイム強制を可能にします。
 
 https://tetragon.io/
+
+# 結論
 
 # 参考
 
