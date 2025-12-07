@@ -1,16 +1,18 @@
 ---
-title: "eBPF を未来に活かす温故知新"
+title: "eBPF を学び、未来をつくるための温故知新"
 emoji: "🐳"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["eBPF"]
 published: false
 ---
-# eBPF を未来に活かす温故知新
+# はじめに
 本記事は Uzabase Advent Calendar 2025 の 22 日目の記事です。
 
 https://qiita.com/advent-calendar/2025/uzabase
 
-# eBPF
+なぜ eBPF を題材に取り上げたかというと、AIOps を進める為には必要な技術だと感じているからです。eBPF について紹介し、eBPF を利用した tcpdump をつくることで深く理解し、AIOps の実現に向けたアプローチを提案します。
+
+# eBPF について紹介
 
 ## eBPF とは
 
@@ -25,9 +27,10 @@ https://ebpf.io/what-is-ebpf/
 
 https://ebpf.io/applications/
 
-## tetragon の導入事例
 
-# tcpdump をつくる
+# tcpdump をつくることで、eBPF を深く理解
+eBPF をより深く理解するために tcpdump をつくります。
+
 ## Maps
 
 https://docs.ebpf.io/linux/concepts/maps/
@@ -44,8 +47,24 @@ https://prototype-kernel.readthedocs.io/en/latest/networking/XDP/introduction.ht
 
 https://docs.rs/aya/latest/aya/index.html
 
+# AIOps の実現に向けたアプローチ
+1. (Monitorring) まず考えることは、データ収集基盤を整えることでしょう。
+* 各サーバのデータを統一されたフォーマットのデータとして収集
+* CPU、メモリ、ネットワークだけでなく、アプリケーション固有のメトリクス、アクセスログやアプリケーションログを収集
 
+2. (Serrvice Desk) データを元にした兆候管理、パフォーマンス最適化
+* CPU、メモリ、ネットワーク、アプリケーション固有のメトリクス、アプリケーションのログは、障害検知に利用する。また、ボトルネックになっているリソースを調整することでパフォーマンスを改善する。
+* リクエストのログは、異常なアクセスを検知するために利用する。
 
+3. (Automation) 分析結果を元にした自動復旧、最適化
+* 障害に対して、自動で復旧する。
+* セキュリティインシデントの発生を検知し、アクセス制御をリアルタイムで強制する。
+* ネットワークのメトリクスから、リアルタイムに通信経路を最適化
+
+## tetragon の導入事例
+Tetragon は、Kubernetes に対応した柔軟なセキュリティ観測およびランタイム強制ツールであり、eBPF を使用してポリシーとフィルタリングを直接適用することで、観測オーバーヘッドの削減、あらゆるプロセスの追跡、ポリシーのリアルタイム強制を可能にします。
+
+https://tetragon.io/
 
 # 参考
 
