@@ -123,8 +123,8 @@ eBPF の良さは、ネットワーク、セキュリティ、可観測性など
 * [The BSD Packet Filter: A New Architecture for User-level Packet Capture](https://www.tcpdump.org/papers/bpf-usenix93.pdf)
 
 記事とブログ
-* [eBPF](https://docs.ebpf.io/)
-* [XDP](https://prototype-kernel.readthedocs.io/en/latest/networking/XDP/introduction.html)
+* [eBPF Docs](https://docs.ebpf.io/)
+* [XDP - eXpress Data Path](https://prototype-kernel.readthedocs.io/en/latest/networking/XDP/introduction.html)
 * [AYA](https://docs.rs/aya/latest/aya/index.html)
 * [BPF for security—and chaos—in Kubernetes](https://lwn.net/Articles/790684/)
 * [Cilium - eBPF-based Networking, Observability, Security](https://cilium.io/)
