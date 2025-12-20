@@ -153,36 +153,127 @@ aya-template によって以下が作成されます。
 ```
 
 
-## eBPF プログラム (カーネル内)
+## eBPF プログラム ( カーネル内 )
+
 
 1. データの取得
 取得するパケット長が 0 となる場合やバウンダリチェックによって閾値を超える場合は早期リターンし `Ok(xdp_action::XDP_PASS)` を返します。データ型なども含めて適切に処置されていないと Verifier によってエラーが出力され弾かれます。
 
 ```rust
-    let data = ctx.data(); // パケットデータの先頭ポインタ
-    let data_end = ctx.data_end(); // パケットデータの終端ポインタ
-    let total_len = data_end - data; // パケット長を計算
+let data = ctx.data(); // パケットデータの先頭ポインタ
+let data_end = ctx.data_end(); // パケットデータの終端ポインタ
+let total_len = data_end - data; // パケット長を計算
 ```
 
 2. RingBuf へのイベント送信
-```rust
-        let events = &mut *core::ptr::addr_of_mut!(EVENTS);
+EVENTS（ RingBuf ）からバッファを予約します。予約できた場合、load_packet でパケットデータをコピーします。成功時は entry.submit(0) で送信、失敗時は entry.discard(0) で破棄しXDP_ABORTEDを返します。
 
-        // events ( RingBuf ) から PACKET_EVENT_CAPACITY 分のバッファを予約
-        if let Some(mut entry) = events.reserve_bytes(PACKET_EVENT_CAPACITY, 0) {
-            // パケットデータのコピー
-            match load_packet(&ctx, len_u32, &mut entry) {
-                Ok(()) => {
-                    entry.submit(0); // 送信
-                }
-                Err(_) => {
-                    entry.discard(0); // 破棄
-                    return Err(xdp_action::XDP_ABORTED);
-                }
-            }
+```rust
+let events = &mut *core::ptr::addr_of_mut!(EVENTS);
+
+// events ( RingBuf ) から PACKET_EVENT_CAPACITY 分のバッファを予約
+if let Some(mut entry) = events.reserve_bytes(PACKET_EVENT_CAPACITY, 0) {
+    // パケットデータのコピー
+    match load_packet(&ctx, len_u32, &mut entry) {
+        Ok(()) => {
+            entry.submit(0); // 送信
         }
+        Err(_) => {
+            entry.discard(0); // 破棄
+            return Err(xdp_action::XDP_ABORTED);
+        }
+    }
+}
  ```
 
+## eBPF アプリケーション ( ユーザ空間 )
+
+アーキテクチャの概要
+```bash
+カーネル空間 (eBPF)
+    ↓ RingBuf
+ユーザー空間
+    ├─ spawn_packet_reader → packet_tx → packet_rx
+    │                                        ↓
+    └─ spawn_input_listener → input_rx ─→ run_app
+                                              ↓
+                                         terminal (UI描画)
+```
+
+
+1. 初期化
+起動時に CLI 引数を解析し（監視するインターフェースやポート）、ロガーを初期化、eBPF で必要な memlock 制限を解除します。
+
+```rust
+let opt = Opt::parse();           // コマンドライン引数の解析 （ iface, port ）
+env_logger::init();               // ロガーの初期化
+bump_memlock_rlimit();            // メモリロック制限の解除 （ eBPF に必要 ）
+```
+
+2. eBPF プログラムの読み込み
+ビルド済みの eBPF バイナリを読み込み、ロガーを設定します。
+
+```rust
+let mut ebpf = aya::Ebpf::load(...);  // コンパイル済み eBPF プログラムを読み込み
+setup_logger(&mut ebpf).await;        // eBPF ロガーの設定
+```
+
+3. RingBuf の取得
+eBPF 側の RingBuf を取得してユーザー空間側の RingBuf ハンドルに変換します。
+
+```rust
+let ring_buf_map = ebpf.take_map("EVENTS")?;  // eBPF 側の EVENTS マップを取得
+let ring_buf = RingBuf::try_from(ring_buf_map)?;  // RingBuf に変換
+```
+
+4. eBPF プログラムのアタッチ
+eBPF プログラムを指定インターフェースにアタッチし、パケットをカーネルでフックできる状態にします。
+
+```rust
+let program: &mut Xdp = ebpf.program_mut("tcpdump")?;
+program.load()?;                              // カーネルにロード
+program.attach(&iface, XdpFlags::default())?; // 指定ネットワークインターフェースにアタッチ
+```
+
+5. 非同期 IO の設定
+RingBuf ハンドルを Tokio の AsyncFd に包み、非同期で読み取れるようにします。
+
+```rust
+let ring_buf = tokio::io::unix::AsyncFd::with_interest(ring_buf, ...)?;
+```
+
+6. チャネルとタスクの起動
+パケット転送用のチャネルを作成し、バックグラウンドタスクspawn_packet_readerを起動。RingBufから受け取ったイベントをパースし、アプリ側にCapturedPacketとして送ります。
+ターミナルUIを初期化し、別スレッドでキーボード入力リスナーを起動します。入力イベントを非同期チャネルで受け取ります。
+
+```rust
+let (packet_tx, packet_rx) = mpsc::channel::<CapturedPacket>(1024);  // パケット用チャネル
+let reader_handle = spawn_packet_reader(ring_buf, packet_tx.clone()); // バックグラウンドでパケット読み取り
+drop(packet_tx);  // 送信側をドロップ （ reader_handle のみが所有 ）
+
+let mut terminal = setup_terminal()?;         // ターミナルUIの初期化
+let input_rx = spawn_input_listener();        // キーボード入力リスナーの起動
+```
+
+7. メインアプリケーションループ
+メインループ run_app で、パケット受信・入力イベント・Ctrl+C を Tokio の select で待ち合わせながら、都度画面を描画。パケットはフィルタを通し、一覧・詳細・生データ表示を更新します。
+
+```rust
+let app_result = run_app(&mut terminal, packet_rx, input_rx, port).await;
+```
+* パケット受信 ( `packet_rx` )、
+* キーボード入力 ( `input_rx` )、
+* ターミナル描画を実行します。
+
+
+8. クリーンアップ
+終了時はターミナルを元に戻し、パケットリーダータスクを中断して終了を待機。ログも随時フラッシュされます。
+
+```rust
+restore_terminal(&mut terminal)?;  // ターミナルを元の状態に復元
+reader_handle.abort();              // パケットリーダータスクを中断
+reader_handle.await;                // タスクの終了を待機
+```
 
 ## Maps
 
@@ -250,6 +341,7 @@ eBPF の良さは、ネットワーク、セキュリティ、可観測性など
 
 参考書籍
 * [入門 eBPF --- Linux カーネルの可視化と機能拡張](https://www.oreilly.co.jp/books/9784814400560/)
+* [マスタリング TCP/IP 入門編](https://www.ohmsha.co.jp/book/9784274224478/)
 
 動画
 * [eBPF を活用した Kubernetes セキュリティ: Tetragon 完全ガイド](https://www.youtube.com/watch?v=xGcCsIJ5AVU)
