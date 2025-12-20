@@ -7,14 +7,14 @@ published: false
 ---
 
 # 前書き
-こんにちわ、ハードウェア、組み込む ( 生産技術 ) からソフトウェア ( SRE ) に転向したエンジニアです。転向から 3 年程度が経ち、様々な技術に触れることで飽きる事なく学び続ける事ができ、緩やかな成長を実感しています。昨今、AI 技術が著しく成長していることを AI コーディングなどから身にしみて感じておりますが、SRE としてはどのように AI をインフラに組み込み、基盤技術と AI による相乗効果を発揮させるのか、AI と既存技術の親和性について考えるようになりました。そこで、eBPF という技術に焦点を当て話してみたいと思います。
+こんにちわ、ハードウェア、組み込む ( 生産技術 ) からソフトウェア ( SRE ) の業界に転向したエンジニアです。転向から 3 年程度が経ち、様々な技術に触れることで飽きる事なく学び続ける事ができ、緩やかな成長を実感しています。昨今、AI 技術が著しく成長していることを AI コーディングなどから身にしみて感じておりますが、SRE としてはどのように AI をインフラに組み込み、基盤技術と AI による相乗効果を発揮させるのか、AI と既存技術の親和性について考えるようになりました。そこで、eBPF という技術に焦点を当て話してみたいと思います。
 
 # 概要
 本記事は Uzabase Advent Calendar 2025 の 22 日目の記事です。
 
 https://qiita.com/advent-calendar/2025/uzabase
 
-さて、今回は歴史ある技術である eBPF の歴史変遷から現代の利用事例を紹介し、未来の応用に触れていきたいと思います。なぜ eBPF を題材に取り上げたかというと、AIOps やセキュリティの強化を進める為には必要な技術だと感じているからです。この記事ではeBPF について紹介し、eBPF を利用した tcpdump をつくることで深く理解し、AIOps の実現に向けたアプローチを提案します。
+さて、今回は歴史ある技術である eBPF の歴史変遷から現代の利用事例を紹介し、未来の応用に触れていきたいと思います。なぜ eBPF を題材に取り上げたかというと、AIOps やセキュリティの強化を進める為には必要な技術だと感じているからです。この記事では eBPF について紹介し、eBPF を利用した tcpdump をつくることで深く理解し、AIOps の実現に向けたアプローチを提案します。
 
 # eBPF について紹介
 
@@ -49,7 +49,7 @@ eBPF はネットワーク、セキュリティ、可観測性など様々な分
 
 https://ebpf.io/applications/
 
-具体的な導入事例は以下の通りです。Cilium は、クラウドネイティブなネットワーク、可観測性、セキュリティに関するサービスを提供し、2021 年に CNCF 傘下のプロジェクトとなり、2023 年には Graduated のレベルに移行しています。Google の [Google Kubernetes Engine (GKE) にネットワーキング](https://cloud.google.com/blog/products/containers-kubernetes/bringing-ebpf-and-cilium-to-google-kubernetes-engine?hl=en)として、 AWS の [EKS Anyware にネットワーキングとセキュリティ](https://isovalent.com/blog/post/2021-09-aws-eks-anywhere-chooses-cilium/?utm_source=website-cilium&utm_medium=referral&utm_campaign=cilium-blog)として採用されるなど代表的なプロジェクトです。Tetragon は、Cilium Enterprise の機能からセキュリティに関するサービスを切り出した OSS のサービスになります。Falco や Istio に関しても CNCF 傘下で Graduated のレベルに移行したプロジェクトとなります。
+具体的な導入事例は以下の通りです。Cilium は、クラウドネイティブなネットワーク、可観測性、セキュリティに関するサービスを提供し、2021 年に CNCF 傘下のプロジェクトとなり、2023 年には Graduated のレベルに移行しています。Google の [Google Kubernetes Engine (GKE) にネットワーキング](https://cloud.google.com/blog/products/containers-kubernetes/bringing-ebpf-and-cilium-to-google-kubernetes-engine?hl=en)として、 AWS の [EKS Anyware にネットワーキングとセキュリティ](https://isovalent.com/blog/post/2021-09-aws-eks-anywhere-chooses-cilium/?utm_source=website-cilium&utm_medium=referral&utm_campaign=cilium-blog)として採用されるなど代表的なプロジェクトです。Tetragon は、Cilium Enterprise の機能からセキュリティに関するサービスを切り出した OSS のサービスになります。Falco や Istio に関しても CNCF 傘下で Graduated のレベルに移行したプロジェクトとなります。他にも Datadog や NewRelic といった監視サービスでも利用され、NewRelic では継続的なアプリケーションプロファイリングを可能にしています。
 
 - Cilium : ネットワーク、可観測性、セキュリティに関するサービスを提供
     - Tetragon : Cilium プロジェクトの一つでセキュリティに特化したサービス
@@ -60,7 +60,9 @@ https://ebpf.io/applications/
 
 
 ## eBPF の仕組み
-eBPF の中心的な機能はプログラムです。eBPF のカスタムプログラムをカーネルの内部に動的にロードし、カーネル内の様々なポイントにアタッチすることで、関数のように実行することができます。
+eBPF の中心的な機能はプログラムです。eBPF プログラムをカーネルの内部に動的にロードし、カーネル内の様々なポイントにアタッチすることで、関数のように実行することができます。
+
+![](/images/article-0008/trigger-function.png)
 
 https://ebpf.io/what-is-ebpf/
 
