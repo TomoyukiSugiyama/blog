@@ -7,7 +7,7 @@ published: false
 ---
 
 # 前書き
-こんにちわ、ハードウェア、組み込む ( 生産技術 ) からソフトウェア ( SRE ) の業界に転向したエンジニアです。転向から 3 年程度が経ち、様々な技術に触れることで飽きる事なく学び続ける事ができ、緩やかな成長を実感しています。昨今、AI 技術が著しく成長していることを AI コーディングなどから身にしみて感じておりますが、SRE としてはどのように AI をインフラに組み込み、基盤技術と AI による相乗効果を発揮させるのか、AI と既存技術の親和性について考えるようになりました。そこで、eBPF という技術に焦点を当て話してみたいと思います。
+こんにちわ、ハードウェア、組み込み ( 生産技術 ) からソフトウェア ( SRE ) の業界に転向したエンジニアです。転向から 3 年程度が経ち、様々な技術に触れることで飽きる事なく学び続ける事ができ、緩やかな成長を実感しています。昨今、AI 技術が著しく成長していることを AI コーディングなどから身にしみて感じておりますが、SRE としてはどのように AI をインフラに組み込み、基盤技術と AI による相乗効果を発揮させるのか、AI と既存技術の親和性について考えるようになりました。そこで、eBPF という技術に焦点を当て話してみたいと思います。
 
 # 概要
 本記事は Uzabase Advent Calendar 2025 の 22 日目の記事です。
@@ -78,11 +78,117 @@ eBPF をより深く理解するために tcpdump をつくります。tcpdump �
 
 主に以下の二つを作成します。
 
-1. カーネルにロードする eBPF プログラムを作成
-2. eBPF アプリケーション ( tcpdump の操作画面、カーネルとの通信 ) を作成
+1. eBPF プログラム ( カーネル内で実行されるプログラム )
+2. eBPF アプリケーション ( ユーザ空間で実行されるプログラム )
 
-## カーネルにロードする eBPF プログラム
+## Aya を利用し、Rust で eBPF プログラミング
+[Aya](https://github.com/aya-rs/aya) は Rust 製の eBPF フレームワークです。[libbpf](https://github.com/libbpf/libbpf) や [bcc](https://github.com/iovisor/bcc) といった C 言語で記述された eBPF ライブラリに依存せずシステムコールを実行するために [libc](https://docs.rs/libc/latest/libc/) クレートのみが使われ、Rust のみでゼロから実装されているところが特徴の一つです。また、非同期処理に [tokio](https://docs.rs/tokio/latest/tokio/) と [async_std](https://docs.rs/async-std/latest/async_std/) の両方をサポートしています。
 
+https://docs.rs/aya/latest/aya/index.html
+
+aya には [aya-template](https://github.com/aya-rs/aya-template) というテンプレートが用意されており、`cargo generate` によってテンプレートから新規プロジェクトを開始する事ができます。
+
+```bash
+cargo install cargo-generate
+cargo generate https://github.com/aya-rs/aya-template
+```
+
+template から作成する際に、フックするポイントを決定する必要があります。tcpdump を作成する場合は、xdp で作成します。kprobe はカーネルに対するプローブになりますが、[tcp_connect](https://elixir.bootlin.com/linux/latest/source/net/ipv4/tcp_output.c#L4249) といったカーネル関数にフックした場合に、[sock](https://elixir.bootlin.com/linux/v6.18.1/source/include/net/sock.h#L354) 構造体に含まれた情報以上の情報が取得できず、tcpdump を実装するには不十分です。
+
+```bash
+🔧   project-name: tcpdump ...
+🔧   Generating template ...
+? 🤷   Which type of eBPF program? ›
+  cgroup_skb
+  cgroup_sockopt
+  cgroup_sysctl
+  classifier
+  fentry
+  fexit
+  kprobe
+  kretprobe
+  lsm
+  perf_event
+  raw_tracepoint
+  sk_msg
+  sock_ops
+  socket_filter
+  tp_btf
+  tracepoint
+  uprobe
+  uretprobe
+❯ xdp
+```
+
+aya-template によって以下が作成されます。
+* {{project-name}} ... eBPF アプリケーション ( ユーザ空間で実行されるプログラム )
+* {{project-name}}-ebpf ...  eBPF プログラム ( カーネル内で実行されるプログラム )
+* {{project-name}}-common ... ユーザ空間とカーネルで動作するプログラム間のインターフェース
+
+
+```bash
+% tree
+.
+|-- Cargo.toml
+|-- LICENSE-APACHE
+|-- LICENSE-GPL2
+|-- LICENSE-MIT
+|-- README.md
+|-- rustfmt.toml
+|-- tcpdump
+|   |-- Cargo.toml
+|   |-- build.rs
+|   `-- src
+|       `-- main.rs
+|-- tcpdump-common
+|   |-- Cargo.toml
+|   `-- src
+|       `-- lib.rs
+`-- tcpdump-ebpf
+    |-- Cargo.toml
+    |-- build.rs
+    `-- src
+        |-- lib.rs
+        `-- main.rs
+```
+
+
+## XDP (eXpress Data Path)
+
+XDP (eXpress Data Path) は、ネットワークパケットを高速処理するために基板で、データリンク層以上のレベルでパケットのデータを操作する仕組みを提供します。
+
+https://prototype-kernel.readthedocs.io/en/latest/networking/XDP/introduction.html#what-is-xdp
+
+
+## eBPF プログラム (カーネル内)
+
+1. データの取得
+取得するパケット長が 0 となる場合やバウンダリチェックによって閾値を超える場合は早期リターンし `Ok(xdp_action::XDP_PASS)` を返します。データ型なども含めて適切に処置されていないと Verifier によってエラーが出力され弾かれます。
+
+```rust
+    let data = ctx.data(); // パケットデータの先頭ポインタ
+    let data_end = ctx.data_end(); // パケットデータの終端ポインタ
+    let total_len = data_end - data; // パケット長を計算
+```
+
+2. RingBuf へのイベント送信
+```rust
+        let events = &mut *core::ptr::addr_of_mut!(EVENTS);
+
+        // events ( RingBuf ) から PACKET_EVENT_CAPACITY 分のバッファを予約
+        if let Some(mut entry) = events.reserve_bytes(PACKET_EVENT_CAPACITY, 0) {
+            // パケットデータのコピー
+            match load_packet(&ctx, len_u32, &mut entry) {
+                Ok(()) => {
+                    entry.submit(0); // 送信
+                }
+                Err(_) => {
+                    entry.discard(0); // 破棄
+                    return Err(xdp_action::XDP_ABORTED);
+                }
+            }
+        }
+ ```
 
 
 ## Maps
@@ -93,13 +199,7 @@ https://docs.ebpf.io/linux/concepts/maps/
 
 https://docs.ebpf.io/linux/concepts/verifier/
 
-## XDP (eXpress Data Path)
 
-https://prototype-kernel.readthedocs.io/en/latest/networking/XDP/introduction.html#what-is-xdp
-
-## Aya
-
-https://docs.rs/aya/latest/aya/index.html
 
 # AIOps の実現に向けたアプローチ
 :::message
