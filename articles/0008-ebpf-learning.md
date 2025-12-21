@@ -39,13 +39,12 @@ BPF ( BSD Packet Filter ) として提案された[論文](https://www.tcpdump.o
 ## eBPF の特徴
 eBPF は現代の技術進歩に合った特徴を持ちます。Linux カーネルへの機能追加には高い専門性が必要であり、追加する機能についても汎用的でなければなりません。たとえ機能追加しても Linux カーネルのリリースサイクルは 2 から 3 ヶ月ごとであり、実際に利用するオペレーティングシステムで利用可能になるには更に多くの時間が必要となります。柔軟に Linux カーネルを拡張する上で eBPF は最適と言えます。カーネルを拡張する方法として、Linux ではカーネルモジュールがサポートされています。カーネルモジュールはカーネルの振る舞いを変更したり、拡張することが可能な一方で、カーネルプログラミングの高度な技術が必要なだけでなく、注意深く実装するする必要があります。バグを含みカーネルがクラッシュする可能性があるからです。安全に拡張できるという点において、eBPF は eBPF 検証機 ( Verifier ) を機能として提供しています。
 
-eBPF はカーネル空間で動作するため、ユーザ空間との間で発生するシステムコールによるオーバーヘッドの追加を最小限に抑える事ができます。この特徴により、eBPF でネットワーキングの機能を実装することで、パフォーマンスを向上させる事ができます。また、Kubernetes のようなコンテナ環境下では、それぞれのコンテナに対して ( サイドカーとして ) ルーティング機能を付与する事なくカーネル空間で全ての通信に適用し、コンテナ数増加に伴う CPU やメモリリソースの増加を抑える事ができます。Istio の サイドカーパターンと eBPF を利用した ambient mode で評価した[ベンチマーク結果](https://istio.io/latest/docs/ops/deployment/performance-and-scalability/)からもパフォーマンスの改善が判断できます。
-オブサーバビリティに関しては、アプリケーション単位で個別にプロファイリングを設定する事なく、全体に適用できる特徴を持ちます。
+eBPF はカーネル空間で動作するため、ユーザ空間との間で発生するシステムコールによるオーバーヘッドの追加を最小限に抑える事ができます。この特徴により、eBPF でネットワーキングの機能を実装することで、パフォーマンスを向上させる事ができます。また、Kubernetes のようなコンテナ環境下では、それぞれのコンテナに対して ( サイドカーとして ) ルーティング機能を付与する事なくカーネル空間で全ての通信に適用し、コンテナ数増加に伴う CPU やメモリリソースの増加を抑える事ができます。Istio の サイドカーパターンと eBPF を利用した ambient mode で評価した[ベンチマーク結果](https://istio.io/latest/docs/ops/deployment/performance-and-scalability/)からもパフォーマンスの改善が判断できます。オブサーバビリティに関しては、アプリケーション単位で個別にプロファイリングを設定する事なく、全体に適用できる特徴を持ちます。
 
 - eBPF はカーネルのソースコードの改変や、カーネルモジュールのロード不要で、安全にカーネルの拡張が可能
 - ネットワークのパフォーマンス向上、CPU、メモリリソースの削減
-- アプリケーション ・・・ プロファイリング、モニタリング、トレーシングに利用可能
-- カーネル・・・監視、セキュリティ、ネットワーキング、ロードバランシングに利用可能
+- アプリケーションのプロファイリング、モニタリング、トレーシングに利用可能
+- 監視、セキュリティ、ネットワーキング、ロードバランシングに利用可能
 
 ## eBPF を利用したサービス
 eBPF はネットワーク、セキュリティ、可観測性など様々な分野で利用可能な技術となります。2016 年頃には、eBPF を利用したサービスが数多く提供されるようになりました。
@@ -73,7 +72,7 @@ https://ebpf.io/what-is-ebpf/
 ![](/images/article-0008/load-ebpf-byte-code.png)
 
 ## Vrerifier
-eBPF の特徴は安全性にあります。ここでの安全性とは、いかなる場合もカーネルを破壊しないこと、システムのセキュリティポリシーに違反しないことを指します。具体的なルールは、妥当な時間内にプログラムが終了すること、任意のメモリを読みとり機密情報が漏洩しないこと、隣接するメモリに機密情報が保存されている可能性があるため、パケット境界の外側にアクセスできないことなとがあります。Verifier は実際に eBPF プログラムを実行するのではなく、一命令ずつ参照し、レジスタの状態の履歴を [bpf_reg_state](https://github.com/torvalds/linux/blob/master/include/linux/bpf_verifier.h) 構造体に保存し評価します。
+eBPF の特徴は安全性にあります。ここでの安全性とは、いかなる場合もカーネルを破壊しないこと、システムのセキュリティポリシーに違反しないことを指します。具体的なルールは、妥当な時間内にプログラムが終了すること、任意のメモリを読みとり機密情報が漏洩しないこと、隣接するメモリに機密情報が保存されている可能性があるため、パケット境界の外側にアクセスできないこと、などがあります。Verifier は実際に eBPF プログラムを実行するのではなく、一命令ずつ参照し、レジスタの状態の履歴を [bpf_reg_state](https://github.com/torvalds/linux/blob/master/include/linux/bpf_verifier.h) 構造体に保存し評価します。
 
 https://docs.ebpf.io/linux/concepts/verifier/
 
@@ -104,7 +103,7 @@ cargo install cargo-generate
 cargo generate https://github.com/aya-rs/aya-template
 ```
 
-template から作成する際に、フックするポイントをあらかじめ決定する必要があります。tcpdump を作成する場合は、xdp で作成します。kprobe はカーネルに対するプローブになりますが、[tcp_connect](https://elixir.bootlin.com/linux/latest/source/net/ipv4/tcp_output.c#L4249) といったカーネル関数にフックした場合に、[sock](https://elixir.bootlin.com/linux/v6.18.1/source/include/net/sock.h#L354) 構造体に含まれた情報以上の情報が取得できず、tcpdump を実装するには不十分です。[XDP (eXpress Data Path)](https://prototype-kernel.readthedocs.io/en/latest/networking/XDP/introduction.html#what-is-xdp) は、ネットワークパケットを高速処理するために基盤で、データリンク層以上のレベルでパケットのデータを操作する仕組みを提供します。NIC ドライバに近い場所で操作することで、高速処理を実現しています。
+template から作成する際に、フックするポイントをあらかじめ決定する必要があります。tcpdump を作成する場合は、xdp で作成します。kprobe はカーネルに対するプローブになりますが、[tcp_connect](https://github.com/torvalds/linux/blob/master/net/ipv4/tcp_output.c#L4257) といったカーネル関数にフックした場合に、[sock](https://github.com/torvalds/linux/blob/master/include/net/sock.h#L359) 構造体に含まれた情報以上の情報が取得できず、tcpdump を実装するには不十分です。[XDP (eXpress Data Path)](https://prototype-kernel.readthedocs.io/en/latest/networking/XDP/introduction.html#what-is-xdp) は、ネットワークパケットを高速処理するために基盤で、データリンク層以上のレベルでパケットのデータを操作する仕組みを提供します。NIC ドライバに近い場所で操作することで、高速処理を実現しています。
 
 ```bash
 🔧   project-name: tcpdump ...
@@ -203,7 +202,7 @@ if let Some(mut entry) = events.reserve_bytes(PACKET_EVENT_CAPACITY, 0) {
  ```
 
 ## eBPF アプリケーション ( ユーザ空間 )
-カーネル空間では、eBPF の XDP プログラムがネットワークインターフェースを通過するパケットをキャプチャし、RingBuf に送信します。RingBuf は、カーネル空間とユーザー空間の間で非同期にデータを転送します。ユーザー空間では、spawn_packet_reader がバックグラウンドタスクとして RingBuf を監視し、パケットイベントを取得してパースし、Tokio のチャネル ( packet_tx ) 経由で packet_rx へ送信します。同時に、spawn_input_listener が別スレッドでキーボード入力を監視し、入力イベントを input_rx チャネルへ送信します。メインループの run_app は、tokio::select! で packet_rx からのパケット受信、input_rx からの入力イベント、Ctrl+C シグナルを待機します。パケットを受信すると app.on_packet() で処理し、入力イベントを受信するとapp.handle_input() で処理します。ループごとに terminal.draw() で画面を更新し、パケット一覧、詳細、生データを ターミナル UI で表示します。
+カーネル空間では、eBPF の XDP プログラムがネットワークインターフェースを通過するパケットをキャプチャし、RingBuf に送信します。RingBuf は、カーネル空間とユーザー空間の間で非同期にデータを転送します。ユーザー空間では、spawn_packet_reader がバックグラウンドタスクとして RingBuf を監視し、パケットイベントを取得してパースし、Tokio のチャネル ( packet_tx ) 経由で packet_rx へ送信します。同時に、spawn_input_listener が別スレッドでキーボード入力を監視し、入力イベントを input_rx チャネルへ送信します。メインループの run_app は、tokio::select! で packet_rx からのパケット受信、input_rx からの入力イベント、Ctrl+C シグナルを待機します。パケットを受信すると app.on_packet() で処理し、入力イベントを受信すると app.handle_input() で処理します。ループごとに terminal.draw() で画面を更新し、パケット一覧、詳細、生データを ターミナル UI で表示します。
 
 アーキテクチャの概要
 ```bash
@@ -259,7 +258,7 @@ let ring_buf = tokio::io::unix::AsyncFd::with_interest(ring_buf, ...)?;
 ```
 
 6. チャネルとタスクの起動
-パケット転送用のチャネルを作成し、バックグラウンドタスク spawn_packet_reader を起動。RingBuf から受け取ったイベントをパースし、アプリ側に CapturedPacket として送ります。ターミナル UI を初期化し、別スレッドでキーボード入力リスナーを起動します。入力イベントを非同期チャネルで受け取ります。
+パケット転送用のチャネルを作成し、バックグラウンドタスク spawn_packet_reader を起動します。RingBuf から受け取ったイベントをパースし、アプリ側に CapturedPacket として送ります。ターミナル UI を初期化し、別スレッドでキーボード入力リスナーを起動します。入力イベントを非同期チャネルで受け取ります。
 
 ```rust
 let (packet_tx, packet_rx) = mpsc::channel::<CapturedPacket>(1024);  // パケット用チャネル
@@ -271,7 +270,7 @@ let input_rx = spawn_input_listener();        // キーボード入力リスナ�
 ```
 
 7. メインアプリケーションループ
-メインループ run_app で、パケット受信・入力イベント・Ctrl+C を Tokio の select で待ち合わせながら、都度画面を描画。パケットはフィルタを通し、一覧・詳細・生データ表示を更新します。
+メインループ run_app で、パケット受信・入力イベント・Ctrl+C を Tokio の select で待ち合わせながら、都度画面を描画します。パケットはフィルタを通し、一覧・詳細・生データ表示を更新します。
 
 ```rust
 let app_result = run_app(&mut terminal, packet_rx, input_rx, port).await;
@@ -282,7 +281,7 @@ let app_result = run_app(&mut terminal, packet_rx, input_rx, port).await;
 
 
 8. クリーンアップ
-終了時はターミナルを元に戻し、パケットリーダータスクを中断して終了を待機。ログも随時フラッシュされます。
+終了時はターミナルを元に戻し、パケットリーダータスクを中断して終了を待機します。ログも随時フラッシュされます。
 
 ```rust
 restore_terminal(&mut terminal)?;  // ターミナルを元の状態に復元
