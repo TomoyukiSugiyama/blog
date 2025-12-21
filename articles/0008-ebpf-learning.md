@@ -2,7 +2,7 @@
 title: "eBPF を学び、未来をつくるための温故知新"
 emoji: "🐳"
 type: "tech" # tech: 技術記事 / idea: アイデア
-topics: ["eBPF", "Kubernetes", "AI"]
+topics: ["eBPF", "Kubernetes", "AI", "Rust", "SRE"]
 published: false
 ---
 
