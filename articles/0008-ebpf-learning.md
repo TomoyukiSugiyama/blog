@@ -27,7 +27,7 @@ eBPF は Linux カーネルに導入された革新的な技術です。カー�
 https://ebpf.io/static/e293240ecccb9d506587571007c36739/f2674/overview.png
 
 ## eBPF の歴史
-BPF ( BSD Packet Filter ) として提案された論文が eBPF の起源となります。BPF はユーザレベルでパケットをキャプチャする新たな機構として提案されました。その後、「Berkeley Packet Filter」の頭文字として BPF が Linux のカーネルに実装されるようになります。BPF は tcpdump の中で効果的にパケットをキャプチャする方法として使われるようになりました。そこから時が経ち、seccomp-bpf が、Linux へ導入されます。これはセキュリティに関する機能であり、パケットフィルタリングだけでない、より汎用的な機能へと進化していきました。そして、2014 年から現在の eBPF が導入されました。
+BPF ( BSD Packet Filter ) として提案された[論文](https://www.tcpdump.org/papers/bpf-usenix93.pdf)が eBPF の起源となります。BPF はユーザレベルでパケットをキャプチャする新たな機構として提案されました。その後、「Berkeley Packet Filter」の頭文字として BPF が Linux のカーネルに実装されるようになります。BPF は tcpdump の中で効果的にパケットをキャプチャする方法として使われるようになりました。そこから時が経ち、seccomp-bpf が、Linux へ導入されます。これはセキュリティに関する機能であり、パケットフィルタリングだけでない、より汎用的な機能へと進化していきました。そして、2014 年から現在の eBPF が導入されました。
 
 | 年代 | 導入 | 内容 | 
 | --- | --- | --- |
