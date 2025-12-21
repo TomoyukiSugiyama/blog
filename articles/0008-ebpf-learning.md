@@ -7,14 +7,14 @@ published: false
 ---
 
 # 前書き
-こんにちは、ハードウェア、組み込み ( 生産技術 ) からソフトウェア ( SRE ) の業界に転向したエンジニアです。転向から 3 年程度が経ち、様々な技術に触れることで飽きる事なく学び続ける事ができ、緩やかな成長を実感しています。昨今、AI 技術が著しく成長していることを AI コーディングなどから身にしみて感じておりますが、SRE としてはどのように AI をインフラに組み込み、基盤技術と AI による相乗効果を発揮させるのか、AI と既存技術の親和性はあるのか、といった点について考えるようになりました。Kubernetes ブログでは、[Headlamp AI Assistant](https://kubernetes.io/blog/2025/08/07/introducing-headlamp-ai-assistant/) という AI による Kubernetes 環境下でのアシスタントツールが紹介されています。AI と相性の良い技術は様々あると思いますが、その中で eBPF という技術に焦点を当て話してみたいと思います。
+こんにちは、ハードウェア、組み込み ( 生産技術 ) からソフトウェア ( SRE ) の業界に転向したエンジニアです。転向から 3 年程度が経ち、様々な技術に触れることで飽きることなく学び続けることができ、緩やかな成長を実感しています。昨今、AI 技術が著しく成長していることを AI コーディングなどから身にしみて感じておりますが、SRE としてはどのように AI をインフラに組み込み、基盤技術と AI による相乗効果を発揮させるのか、AI と既存技術の親和性はあるのか、といった点について考えるようになりました。Kubernetes ブログでは、[Headlamp AI Assistant](https://kubernetes.io/blog/2025/08/07/introducing-headlamp-ai-assistant/) という AI による Kubernetes 環境下でのアシスタントツールが紹介されています。AI と相性の良い技術は様々あると思いますが、その中で eBPF という技術に焦点を当てて話してみたいと思います。
 
 # 概要
 本記事は Uzabase Advent Calendar 2025 の 22 日目の記事です。
 
 https://qiita.com/advent-calendar/2025/uzabase
 
-さて、今回は歴史ある技術である eBPF の歴史変遷から現代の利用事例を紹介し、未来の応用に触れていきたいと思います。なぜ eBPF を題材に取り上げたかというと、AIOps やセキュリティの強化を進める為には必要な技術だと感じているからです。この記事では eBPF について紹介し、eBPF を利用した tcpdump をつくることで深く理解し、AIOps の実現に向けたアプローチを提案します。
+さて、今回は歴史ある技術である eBPF の歴史変遷から現代の利用事例を紹介し、未来の応用に触れていきたいと思います。なぜ eBPF を題材に取り上げたかというと、AIOps やセキュリティの強化を進めるためには必要な技術だと感じているからです。この記事では eBPF について紹介し、eBPF を利用した tcpdump をつくることで深く理解し、AIOps の実現に向けたアプローチを提案します。
 
 :::message
 eBPF 仮想マシンの命令セットやアーキテクチャ、bpf() システムコールの詳細には触れません。
@@ -22,7 +22,7 @@ eBPF 仮想マシンの命令セットやアーキテクチャ、bpf() システ
 
 # eBPF について紹介
 
-eBPF は Linux カーネルに導入された革新的な技術です。カーネルのソースコード変更やカーネルモジュールのロードを必要とせず、カーネルの機能を安全に効率的に拡張する技術です。ネットワーキング、セキュリティ、可観測性と様々な分野の課題に取り組む事ができます。
+eBPF は Linux カーネルに導入された革新的な技術です。カーネルのソースコード変更やカーネルモジュールのロードを必要とせず、カーネルの機能を安全に効率的に拡張する技術です。ネットワーキング、セキュリティ、可観測性と様々な分野の課題に取り組むことができます。
 
 https://ebpf.io/static/e293240ecccb9d506587571007c36739/f2674/overview.png
 
@@ -39,7 +39,7 @@ BPF ( BSD Packet Filter ) として提案された[論文](https://www.tcpdump.o
 ## eBPF の特徴
 eBPF は現代の技術進歩に合った特徴を持ちます。Linux カーネルへの機能追加には高い専門性が必要であり、追加する機能についても汎用的でなければなりません。たとえ機能追加しても Linux カーネルのリリースサイクルは 2 から 3 ヶ月ごとであり、実際に利用するオペレーティングシステムで利用可能になるには更に多くの時間が必要となります。柔軟に Linux カーネルを拡張する上で eBPF は最適と言えます。カーネルを拡張する方法として、Linux ではカーネルモジュールがサポートされています。カーネルモジュールはカーネルの振る舞いを変更したり、拡張することが可能な一方で、カーネルプログラミングの高度な技術が必要なだけでなく、注意深く実装する必要があります。バグを含みカーネルがクラッシュする可能性があるからです。安全に拡張できるという点において、eBPF は eBPF 検証機 ( Verifier ) を機能として提供しています。
 
-eBPF はカーネル空間で動作するため、ユーザ空間との間で発生するシステムコールによるオーバーヘッドの追加を最小限に抑える事ができます。この特徴により、eBPF でネットワーキングの機能を実装することで、パフォーマンスを向上させる事ができます。また、Kubernetes のようなコンテナ環境下では、それぞれのコンテナに対して ( サイドカーとして ) ルーティング機能を付与する事なくカーネル空間で全ての通信に適用し、コンテナ数増加に伴う CPU やメモリリソースの増加を抑える事ができます。Istio の サイドカーパターンと eBPF を利用した ambient mode で評価した[ベンチマーク結果](https://istio.io/latest/docs/ops/deployment/performance-and-scalability/)からもパフォーマンスの改善が判断できます。可観測性に関しては、アプリケーション単位で個別にプロファイリングを設定する事なく、全体に適用できる特徴を持ちます。
+eBPF はカーネル空間で動作するため、ユーザ空間との間で発生するシステムコールによるオーバーヘッドの追加を最小限に抑えることができます。この特徴により、eBPF でネットワーキングの機能を実装することで、パフォーマンスを向上させることができます。また、Kubernetes のようなコンテナ環境下では、それぞれのコンテナに対して ( サイドカーとして ) ルーティング機能を付与することなくカーネル空間で全ての通信に適用し、コンテナ数増加に伴う CPU やメモリリソースの増加を抑えることができます。Istio の サイドカーパターンと eBPF を利用した ambient mode で評価した[ベンチマーク結果](https://istio.io/latest/docs/ops/deployment/performance-and-scalability/)からもパフォーマンスの改善が判断できます。可観測性に関しては、アプリケーション単位で個別にプロファイリングを設定することなく、全体に適用できる特徴を持ちます。
 
 - eBPF はカーネルのソースコードの改変や、カーネルモジュールのロード不要で、安全にカーネルの拡張が可能
 - ネットワークのパフォーマンス向上、CPU、メモリリソースの削減
@@ -51,7 +51,7 @@ eBPF はネットワーク、セキュリティ、可観測性など様々な分
 
 https://ebpf.io/applications/
 
-具体的な導入事例は以下の通りです。Cilium は、クラウドネイティブなネットワーク、可観測性、セキュリティに関するサービスを提供し、2021 年に CNCF 傘下のプロジェクトとなり、2023 年には Graduated のレベルに移行しています。Google の [Google Kubernetes Engine (GKE) にネットワーキング](https://cloud.google.com/blog/products/containers-kubernetes/bringing-ebpf-and-cilium-to-google-kubernetes-engine?hl=en)として、 AWS の [EKS Anyware にネットワーキングとセキュリティ](https://isovalent.com/blog/post/2021-09-aws-eks-anywhere-chooses-cilium/?utm_source=website-cilium&utm_medium=referral&utm_campaign=cilium-blog)として採用されるなど代表的なプロジェクトです。Tetragon は、Cilium Enterprise の機能からセキュリティに関するサービスを切り出した OSS のサービスになります。Falco や Istio に関しても CNCF 傘下で Graduated のレベルに移行したプロジェクトとなります。他にも Datadog や NewRelic といった監視サービスでも利用され、NewRelic では継続的なアプリケーションプロファイリングを可能にしています。
+具体的な導入事例は以下の通りです。Cilium は、クラウドネイティブなネットワーク、可観測性、セキュリティに関するサービスを提供し、2021 年に CNCF 傘下のプロジェクトとなり、2023 年には Graduated のレベルに移行しています。Google の [Google Kubernetes Engine (GKE) にネットワーキング](https://cloud.google.com/blog/products/containers-kubernetes/bringing-ebpf-and-cilium-to-google-kubernetes-engine?hl=en)として、AWS の [EKS Anywhere にネットワーキングとセキュリティ](https://isovalent.com/blog/post/2021-09-aws-eks-anywhere-chooses-cilium/?utm_source=website-cilium&utm_medium=referral&utm_campaign=cilium-blog)として採用されるなど代表的なプロジェクトです。Tetragon は、Cilium Enterprise の機能からセキュリティに関するサービスを切り出した OSS のサービスになります。Falco や Istio に関しても CNCF 傘下で Graduated のレベルに移行したプロジェクトとなります。他にも Datadog や NewRelic といった監視サービスでも利用され、NewRelic では継続的なアプリケーションプロファイリングを可能にしています。
 
 - Cilium : ネットワーク、可観測性、セキュリティに関するサービスを提供
     - Tetragon : Cilium プロジェクトの一つでセキュリティに特化したサービス
@@ -96,7 +96,7 @@ eBPF をより深く理解するために tcpdump をつくります。tcpdump �
 
 https://docs.rs/aya/latest/aya/index.html
 
-aya には [aya-template](https://github.com/aya-rs/aya-template) というテンプレートが用意されており、`cargo generate` によってテンプレートから新規プロジェクトを開始する事ができます。
+aya には [aya-template](https://github.com/aya-rs/aya-template) というテンプレートが用意されており、`cargo generate` によってテンプレートから新規プロジェクトを開始することができます。
 
 ```bash
 cargo install cargo-generate
@@ -311,7 +311,7 @@ AI と実行基盤を融合する上で、3 つのステップを踏む必要が
 * セキュリティインシデントの発生を検知し、アクセス制御をリアルタイムで強制する。
 
 ## Tetragon の導入事例
-Monitoring のステップでセキュリティに関するメトリクスを取得する方法として、eBPF をベースとした Tetragon の活用が有効的です。Tetragon は、Kubernetes に対応した柔軟なセキュリティ観測およびランタイム強制ツールであり、eBPF を使用してポリシーとフィルタリングを直接適用することで、観測オーバーヘッドの削減、あらゆるプロセスの追跡、ポリシーのリアルタイム強制を可能にします。
+Monitoring のステップでセキュリティに関するメトリクスを取得する方法として、eBPF をベースとした Tetragon の活用が有効です。Tetragon は、Kubernetes に対応した柔軟なセキュリティ観測およびランタイム強制ツールであり、eBPF を使用してポリシーとフィルタリングを直接適用することで、観測オーバーヘッドの削減、あらゆるプロセスの追跡、ポリシーのリアルタイム強制を可能にします。
 
 https://tetragon.io/
 
@@ -338,7 +338,7 @@ spec:
           - 10.111.11.111
 ```
 
-kprobe の[フックポイント](https://tetragon.io/docs/concepts/tracing-policy/hooks/#kprobes)は以下で確認する事ができます。
+kprobe の[フックポイント](https://tetragon.io/docs/concepts/tracing-policy/hooks/#kprobes)は以下で確認することができます。
 
 ```bash
 # フックポイントの取得
