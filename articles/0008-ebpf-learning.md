@@ -368,7 +368,7 @@ eBPF の良さは、ネットワーク、セキュリティ、可観測性など
 * [Kubernetes ブログ](https://kubernetes.io/blog/2025/08/07/introducing-headlamp-ai-assistant/)
 * [Istio - Performance and Scalability](https://istio.io/latest/docs/ops/deployment/performance-and-scalability/)
 
-参考書籍
+書籍
 * [入門 eBPF --- Linux カーネルの可視化と機能拡張](https://www.oreilly.co.jp/books/9784814400560/)
 * [マスタリング TCP/IP 入門編](https://www.ohmsha.co.jp/book/9784274224478/)
 
