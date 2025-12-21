@@ -70,6 +70,15 @@ https://ebpf.io/what-is-ebpf/
 
 ![](/images/article-0008/load-ebpf-byte-code.png)
 
+## Vrerifier
+eBPF の特徴は安全性にあります。ここでの安全性とは、いかなる場合もカーネルを破壊しないこと、システムのセキュリティポリシーに違反しないことを指します。具体的なルールは、妥当な時間内にプログラムが終了すること、任意のメモリを読みとり機密情報が漏洩しないこと、隣接するメモリに機密情報が保存されている可能性があるため、パケット境界の外側にアクセスできないことなとがあります。Verifier は実際に eBPF プログラムを実行するのではなく、一命令ずつ参照し、レジスタの状態の履歴を [bpf_reg_state](https://github.com/torvalds/linux/blob/master/include/linux/bpf_verifier.h) 構造体に保存し評価します。
+
+https://docs.ebpf.io/linux/concepts/verifier/
+
+## Map
+eBPF における Map は、eBPF プログラムとユーザ空間からアクセス可能なデータ構造を指します。 一般的なユースケースでは、ユーザ空間で設定情報を書き込み、eBPF プログラムからその情報を取得する。eBPF プログラム間で情報を共有する。eBPF プログラムで取得したメトリクスを、ユーザ空間でメトリクスを表示するといった用途で利用されいます。Linux の bpf.h には様々な種類の [bpf_map_type](https://github.com/torvalds/linux/blob/master/include/uapi/linux/bpf.h#L980-L1031) が定義されています。用途にあった Map を選択し利用します。
+
+https://docs.ebpf.io/linux/concepts/maps/
 
 # tcpdump で、eBPF を深く理解
 eBPF をより深く理解するために tcpdump をつくります。tcpdump はネットワークを流れるパケットをリアルタイムでキャプチャして解析できるコマンドラインツールです。ネットワークトラフィックの分析やセキュリティ分析に用いられます。
@@ -93,7 +102,7 @@ cargo install cargo-generate
 cargo generate https://github.com/aya-rs/aya-template
 ```
 
-template から作成する際に、フックするポイントを決定する必要があります。tcpdump を作成する場合は、xdp で作成します。kprobe はカーネルに対するプローブになりますが、[tcp_connect](https://elixir.bootlin.com/linux/latest/source/net/ipv4/tcp_output.c#L4249) といったカーネル関数にフックした場合に、[sock](https://elixir.bootlin.com/linux/v6.18.1/source/include/net/sock.h#L354) 構造体に含まれた情報以上の情報が取得できず、tcpdump を実装するには不十分です。[XDP (eXpress Data Path)](https://prototype-kernel.readthedocs.io/en/latest/networking/XDP/introduction.html#what-is-xdp) は、ネットワークパケットを高速処理するために基盤で、データリンク層以上のレベルでパケットのデータを操作する仕組みを提供します。
+template から作成する際に、フックするポイントをあらかじめ決定する必要があります。tcpdump を作成する場合は、xdp で作成します。kprobe はカーネルに対するプローブになりますが、[tcp_connect](https://elixir.bootlin.com/linux/latest/source/net/ipv4/tcp_output.c#L4249) といったカーネル関数にフックした場合に、[sock](https://elixir.bootlin.com/linux/v6.18.1/source/include/net/sock.h#L354) 構造体に含まれた情報以上の情報が取得できず、tcpdump を実装するには不十分です。[XDP (eXpress Data Path)](https://prototype-kernel.readthedocs.io/en/latest/networking/XDP/introduction.html#what-is-xdp) は、ネットワークパケットを高速処理するために基盤で、データリンク層以上のレベルでパケットのデータを操作する仕組みを提供します。NIC ドライバに近い場所で操作することで、高速処理を実現しています。
 
 ```bash
 🔧   project-name: tcpdump ...
@@ -154,6 +163,14 @@ aya-template によって以下が作成されます。
 
 
 ## eBPF プログラム ( カーネル内 )
+eBPF 側では、パケットの到達後、パケットの範囲チェックなどを行い、RingBuf に送信する役割を担います。Aya では、様々な種類の [Map](https://docs.rs/aya-ebpf/latest/aya_ebpf/maps/index.html) が利用可能です。
+* 高頻度のイベント転送 : RingBuf
+* キー、バリューの保存 : HashMap または PerCPUHashMap
+* パフォーマンス分析 : PerfEventArray
+* プログラム間連携 : ProgramArray
+* ソケット管理 : SockMap または SockHash
+
+他にも多数あり、用途に応じて適切な Map を選択することで、 eBPF プログラムの効率を向上できます。
 
 
 1. データの取得
@@ -166,7 +183,7 @@ let total_len = data_end - data; // パケット長を計算
 ```
 
 2. RingBuf へのイベント送信
-EVENTS（ RingBuf ）からバッファを予約します。予約できた場合、load_packet でパケットデータをコピーします。成功時は entry.submit(0) で送信、失敗時は entry.discard(0) で破棄しXDP_ABORTEDを返します。
+EVENTS（ RingBuf ）からバッファを予約します。予約できた場合、load_packet でパケットデータをコピーします。成功時は entry.submit(0) で送信、失敗時は entry.discard(0) で破棄し XDP_ABORTED を返します。
 
 ```rust
 let events = &mut *core::ptr::addr_of_mut!(EVENTS);
@@ -187,6 +204,7 @@ if let Some(mut entry) = events.reserve_bytes(PACKET_EVENT_CAPACITY, 0) {
  ```
 
 ## eBPF アプリケーション ( ユーザ空間 )
+カーネル空間では、eBPF の XDP プログラムがネットワークインターフェースを通過するパケットをキャプチャし、RingBuf に送信します。RingBuf は、カーネル空間とユーザー空間の間で非同期にデータを転送します。ユーザー空間では、spawn_packet_reader がバックグラウンドタスクとして RingBuf を監視し、パケットイベントを取得してパースし、Tokio のチャネル ( packet_tx ) 経由で packet_rx へ送信します。同時に、spawn_input_listener が別スレッドでキーボード入力を監視し、入力イベントを input_rx チャネルへ送信します。メインループの run_app は、tokio::select! で packet_rx からのパケット受信、input_rx からの入力イベント、Ctrl+C シグナルを待機します。パケットを受信すると app.on_packet() で処理し、入力イベントを受信するとapp.handle_input() で処理します。ループごとに terminal.draw() で画面を更新し、パケット一覧、詳細、生データを TUI で表示します。
 
 アーキテクチャの概要
 ```bash
@@ -202,7 +220,7 @@ if let Some(mut entry) = events.reserve_bytes(PACKET_EVENT_CAPACITY, 0) {
 
 
 1. 初期化
-起動時に CLI 引数を解析し（監視するインターフェースやポート）、ロガーを初期化、eBPF で必要な memlock 制限を解除します。
+起動時に CLI 引数を解析し ( 監視するインターフェースやポート )、ロガーを初期化、eBPF で必要な memlock 制限を解除します。
 
 ```rust
 let opt = Opt::parse();           // コマンドライン引数の解析 （ iface, port ）
@@ -243,8 +261,7 @@ let ring_buf = tokio::io::unix::AsyncFd::with_interest(ring_buf, ...)?;
 ```
 
 6. チャネルとタスクの起動
-パケット転送用のチャネルを作成し、バックグラウンドタスクspawn_packet_readerを起動。RingBufから受け取ったイベントをパースし、アプリ側にCapturedPacketとして送ります。
-ターミナルUIを初期化し、別スレッドでキーボード入力リスナーを起動します。入力イベントを非同期チャネルで受け取ります。
+パケット転送用のチャネルを作成し、バックグラウンドタスク spawn_packet_reader を起動。RingBuf から受け取ったイベントをパースし、アプリ側に CapturedPacket として送ります。ターミナルUIを初期化し、別スレッドでキーボード入力リスナーを起動します。入力イベントを非同期チャネルで受け取ります。
 
 ```rust
 let (packet_tx, packet_rx) = mpsc::channel::<CapturedPacket>(1024);  // パケット用チャネル
@@ -274,16 +291,6 @@ restore_terminal(&mut terminal)?;  // ターミナルを元の状態に復元
 reader_handle.abort();              // パケットリーダータスクを中断
 reader_handle.await;                // タスクの終了を待機
 ```
-
-## Maps
-
-https://docs.ebpf.io/linux/concepts/maps/
-
-## Vrerifier
-
-https://docs.ebpf.io/linux/concepts/verifier/
-
-
 
 # AIOps の実現に向けたアプローチ
 :::message
