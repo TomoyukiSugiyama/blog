@@ -39,7 +39,7 @@ BPF ( BSD Packet Filter ) として提案された[論文](https://www.tcpdump.o
 ## eBPF の特徴
 eBPF は現代の技術進歩に合った特徴を持ちます。Linux カーネルへの機能追加には高い専門性が必要であり、追加する機能についても汎用的でなければなりません。たとえ機能を追加しても Linux カーネルのリリースサイクルは 2 から 3 ヶ月ごとであり、実際に利用するオペレーティングシステムで利用可能になるには更に多くの時間が必要となります。柔軟に Linux カーネルを拡張する上で eBPF は最適と言えます。カーネルを拡張する方法として、Linux ではカーネルモジュールがサポートされています。カーネルモジュールはカーネルの振る舞いを変更したり、拡張することが可能な一方で、カーネルプログラミングの高度な技術が必要なだけでなく、注意深く実装する必要があります。バグを含みカーネルがクラッシュする可能性があるからです。安全に拡張できるという点において、eBPF は eBPF 検証機 ( Verifier ) を機能として提供しています。
 
-eBPF はカーネル空間で動作するため、ユーザ空間との間で発生するシステムコールによるオーバーヘッドの追加を最小限に抑えることができます。この特徴により、eBPF でネットワーキングの機能を実装することで、パフォーマンスを向上させることができます。また、Kubernetes のようなコンテナ環境下では、それぞれのコンテナに対して ( サイドカーとして ) ルーティング機能を付与することなくカーネル空間で全ての通信に適用し、コンテナ数増加に伴う CPU やメモリリソースの増加を抑えることができます。Istio の サイドカーパターンと eBPF を利用した ambient mode で評価した[ベンチマーク結果](https://istio.io/latest/docs/ops/deployment/performance-and-scalability/)からもパフォーマンスの改善が判断できます。可観測性に関しては、アプリケーション単位で個別にプロファイリングを設定することなく、全体に適用できる特徴を持ちます。
+eBPF はカーネル空間で動作するため、ユーザ空間との間で発生するシステムコールによるオーバーヘッドの追加を最小限に抑えることができます。この特徴により、eBPF でネットワーキングの機能を実装することで、パフォーマンスを向上させることができます。また、Kubernetes のようなコンテナ環境下では、それぞれのコンテナに対して ( サイドカーとして ) ルーティング機能を付与することなくカーネル空間で全ての通信に適用し、コンテナ数増加に伴う CPU やメモリリソースの増加を抑えることができます。Istio の サイドカーパターンと eBPF を利用した Ambient モードで評価した[ベンチマーク結果](https://istio.io/latest/docs/ops/deployment/performance-and-scalability/)からもパフォーマンスの改善が判断できます。可観測性に関しては、アプリケーション単位で個別にプロファイリングを設定することなく、全体に適用できる特徴を持ちます。
 
 - eBPF はカーネルのソースコードの改変や、カーネルモジュールのロード不要で、安全にカーネルの拡張が可能
 - ネットワークのパフォーマンス向上、CPU、メモリリソースの削減
@@ -51,7 +51,7 @@ eBPF はネットワーク、セキュリティ、可観測性など様々な分
 
 https://ebpf.io/applications/
 
-具体的な導入事例は以下の通りです。Cilium は、クラウドネイティブなネットワーク、可観測性、セキュリティに関するサービスを提供し、2021 年に CNCF 傘下のプロジェクトとなり、2023 年には Graduated のレベルに移行しています。Google の [Google Kubernetes Engine (GKE) にネットワーキング](https://cloud.google.com/blog/products/containers-kubernetes/bringing-ebpf-and-cilium-to-google-kubernetes-engine?hl=en)として、AWS の [EKS Anywhere にネットワーキングとセキュリティ](https://isovalent.com/blog/post/2021-09-aws-eks-anywhere-chooses-cilium/?utm_source=website-cilium&utm_medium=referral&utm_campaign=cilium-blog)として採用されるなど代表的なプロジェクトです。Tetragon は、Cilium Enterprise の機能からセキュリティに関するサービスを切り出した OSS のサービスになります。Falco や Istio に関しても CNCF 傘下で Graduated のレベルに移行したプロジェクトとなります。他にも Datadog や NewRelic といった監視サービスでも利用され、NewRelic では継続的なアプリケーションプロファイリングを可能にしています。
+具体的な導入事例は以下の通りです。Cilium は、クラウドネイティブなネットワーク、可観測性、セキュリティに関するサービスを提供し、2021 年に CNCF 傘下のプロジェクトとなり、2023 年には Graduated のレベルに移行しています。Google の [Google Kubernetes Engine (GKE) にネットワーキング](https://cloud.google.com/blog/products/containers-kubernetes/bringing-ebpf-and-cilium-to-google-kubernetes-engine?hl=en)として、AWS の [EKS Anywhere にネットワーキングとセキュリティ](https://isovalent.com/blog/post/2021-09-aws-eks-anywhere-chooses-cilium/?utm_source=website-cilium&utm_medium=referral&utm_campaign=cilium-blog)として採用されるなど代表的なプロジェクトです。Cilium は、[iptables を BPF に置き換える](https://cilium.io/blog/2018/04/17/why-is-the-kernel-community-replacing-iptables/)ことでネットワークパフォーマンスの改善を達成しています。 Tetragon は、Cilium Enterprise の機能からセキュリティに関するサービスを切り出した OSS のサービスになります。Falco や Istio に関しても CNCF 傘下で Graduated のレベルに移行したプロジェクトとなります。他にも Datadog や NewRelic といった監視サービスでも利用され、NewRelic では継続的なアプリケーションプロファイリングを可能にしています。
 
 - Cilium : ネットワーク、可観測性、セキュリティに関するサービスを提供
     - Tetragon : Cilium プロジェクトの一つでセキュリティに特化したサービス
